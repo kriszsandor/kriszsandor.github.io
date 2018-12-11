@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Telecom on Krisztian Sandor&#39;s data science blog</title>
+    <link>https://kriszsandor.github.io/tags/telecom/</link>
+    <description>Recent content in Telecom on Krisztian Sandor&#39;s data science blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>&amp;copy; Krisztian Sandor, Budapest, Hungary</copyright>
+    <lastBuildDate>Tue, 11 Dec 2018 01:00:26 -0500</lastBuildDate>
+    
+	<atom:link href="https://kriszsandor.github.io/tags/telecom/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Clustering of Fortune 500 companies based on Twitter activity</title>
+      <link>https://kriszsandor.github.io/posts/20181210_fletcher_blog/</link>
+      <pubDate>Tue, 11 Dec 2018 01:00:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/posts/20181210_fletcher_blog/</guid>
+      <description>1. Importing required packages # twitter loader import sys sys.path.append(&amp;#39;[...]/GetOldTweets-python/&amp;#39;) import got3 # misc packages from collections import defaultdict import pandas as pd import numpy as np import pickle as pkl from math import isnan import os from time import time # Packages for scraping from fake_useragent import UserAgent import re import requests as req from bs4 import BeautifulSoup from urllib.parse import urljoin # Packages for cleaning text from string import digits, punctuation from nltk.</description>
+    </item>
+    
+    <item>
+      <title>Dynamic cell-capacity allocation for telecoms</title>
+      <link>https://kriszsandor.github.io/posts/20181213_passionproject/</link>
+      <pubDate>Fri, 07 Dec 2018 11:49:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/posts/20181213_passionproject/</guid>
+      <description>This project has served as my &amp;lsquo;passion-project&amp;rsquo; in Metis Data Science Bootcamp in December, 2018 in New York.
+# Plotting libraries import geojson import matplotlib.colors as colors import matplotlib.cm as cmx import seaborn as sns %matplotlib inline import matplotlib.pyplot as plt from descartes import PolygonPatch import matplotlib.animation as animation # Standard libraries import pandas as pd import numpy as np # Misc libraries import json import io import requests %matplotlib inline 1.</description>
+    </item>
+    
+  </channel>
+</rss>

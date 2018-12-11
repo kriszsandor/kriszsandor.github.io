@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Pages on Krisztian Sandor&#39;s data science blog</title>
+    <link>https://kriszsandor.github.io/pages/</link>
+    <description>Recent content in Pages on Krisztian Sandor&#39;s data science blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>&amp;copy; Krisztian Sandor, Budapest, Hungary</copyright>
+    <lastBuildDate>Thu, 06 Dec 2018 16:44:46 -0500</lastBuildDate>
+    
+	<atom:link href="https://kriszsandor.github.io/pages/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>About</title>
+      <link>https://kriszsandor.github.io/pages/about/</link>
+      <pubDate>Thu, 06 Dec 2018 16:44:46 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/pages/about/</guid>
+      <description>This is Krisztian Sandor&amp;rsquo;s blog about data science projects concluded at Metis Data Science bootcamp in New York in 2018.</description>
+    </item>
+    
+  </channel>
+</rss>

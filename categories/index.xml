@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Categories on Krisztian Sandor&#39;s data science blog</title>
+    <link>https://kriszsandor.github.io/categories/</link>
+    <description>Recent content in Categories on Krisztian Sandor&#39;s data science blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>&amp;copy; Krisztian Sandor, Budapest, Hungary</copyright>
+    
+	<atom:link href="https://kriszsandor.github.io/categories/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+  </channel>
+</rss>

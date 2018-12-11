@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tags on Krisztian Sandor&#39;s data science blog</title>
+    <link>https://kriszsandor.github.io/tags/</link>
+    <description>Recent content in Tags on Krisztian Sandor&#39;s data science blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>&amp;copy; Krisztian Sandor, Budapest, Hungary</copyright>
+    <lastBuildDate>Thu, 06 Dec 2018 16:44:46 -0500</lastBuildDate>
+    
+	<atom:link href="https://kriszsandor.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>About</title>
+      <link>https://kriszsandor.github.io/tags/about/</link>
+      <pubDate>Thu, 06 Dec 2018 16:44:46 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/about/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Author</title>
+      <link>https://kriszsandor.github.io/tags/author/</link>
+      <pubDate>Thu, 06 Dec 2018 16:44:46 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/author/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>B2b</title>
+      <link>https://kriszsandor.github.io/tags/b2b/</link>
+      <pubDate>Tue, 11 Dec 2018 01:00:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/b2b/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Cell</title>
+      <link>https://kriszsandor.github.io/tags/cell/</link>
+      <pubDate>Fri, 07 Dec 2018 11:49:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/cell/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Clustering</title>
+      <link>https://kriszsandor.github.io/tags/clustering/</link>
+      <pubDate>Tue, 11 Dec 2018 01:00:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/clustering/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Cnn</title>
+      <link>https://kriszsandor.github.io/tags/cnn/</link>
+      <pubDate>Fri, 07 Dec 2018 11:49:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/cnn/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Hierarchical</title>
+      <link>https://kriszsandor.github.io/tags/hierarchical/</link>
+      <pubDate>Tue, 11 Dec 2018 01:00:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/hierarchical/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Keras</title>
+      <link>https://kriszsandor.github.io/tags/keras/</link>
+      <pubDate>Fri, 07 Dec 2018 11:49:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/keras/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Natural Language Processing</title>
+      <link>https://kriszsandor.github.io/tags/natural-language-processing/</link>
+      <pubDate>Tue, 11 Dec 2018 01:00:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/natural-language-processing/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Nmf</title>
+      <link>https://kriszsandor.github.io/tags/nmf/</link>
+      <pubDate>Tue, 11 Dec 2018 01:00:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/nmf/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Tableau</title>
+      <link>https://kriszsandor.github.io/tags/tableau/</link>
+      <pubDate>Fri, 07 Dec 2018 11:49:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/tableau/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Telecom</title>
+      <link>https://kriszsandor.github.io/tags/telecom/</link>
+      <pubDate>Tue, 11 Dec 2018 01:00:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/telecom/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Time Series</title>
+      <link>https://kriszsandor.github.io/tags/time-series/</link>
+      <pubDate>Fri, 07 Dec 2018 11:49:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/time-series/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Topic</title>
+      <link>https://kriszsandor.github.io/tags/topic/</link>
+      <pubDate>Tue, 11 Dec 2018 01:00:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/topic/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Twitter</title>
+      <link>https://kriszsandor.github.io/tags/twitter/</link>
+      <pubDate>Tue, 11 Dec 2018 01:00:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/twitter/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Wavenet</title>
+      <link>https://kriszsandor.github.io/tags/wavenet/</link>
+      <pubDate>Fri, 07 Dec 2018 11:49:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/wavenet/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>

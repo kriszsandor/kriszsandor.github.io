@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Cnn on Krisztian Sandor&#39;s data science blog</title>
+    <link>https://kriszsandor.github.io/tags/cnn/</link>
+    <description>Recent content in Cnn on Krisztian Sandor&#39;s data science blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>&amp;copy; Krisztian Sandor, Budapest, Hungary</copyright>
+    <lastBuildDate>Fri, 07 Dec 2018 11:49:26 -0500</lastBuildDate>
+    
+	<atom:link href="https://kriszsandor.github.io/tags/cnn/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Dynamic cell-capacity allocation for telecoms</title>
+      <link>https://kriszsandor.github.io/posts/20181213_passionproject/</link>
+      <pubDate>Fri, 07 Dec 2018 11:49:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/posts/20181213_passionproject/</guid>
+      <description>This project has served as my &amp;lsquo;passion-project&amp;rsquo; in Metis Data Science Bootcamp in December, 2018 in New York.
+# Plotting libraries import geojson import matplotlib.colors as colors import matplotlib.cm as cmx import seaborn as sns %matplotlib inline import matplotlib.pyplot as plt from descartes import PolygonPatch import matplotlib.animation as animation # Standard libraries import pandas as pd import numpy as np # Misc libraries import json import io import requests %matplotlib inline 1.</description>
+    </item>
+    
+  </channel>
+</rss>

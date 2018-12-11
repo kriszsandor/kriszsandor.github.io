@@ -1,0 +1,2741 @@
+<!DOCTYPE html> 
+<html lang="">
+<head prefix="og: http://ogp.me/ns#">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+  <meta property="og:title" content=" Clustering of Fortune 500 companies based on Twitter activity &middot;  Krisztian Sandor&#39;s data science blog" />
+  
+  <meta property="og:site_name" content="Krisztian Sandor&#39;s data science blog" />
+  <meta property="og:url" content="https://kriszsandor.github.io/posts/20181210_fletcher_blog/" />
+  
+  
+    <meta property="og:type" content="article" />
+    
+    <meta property="og:article:published_time" content="2018-12-11T01:00:26-05:00" />
+    
+      <meta property="og:article:tag" content="telecom" />
+    
+      <meta property="og:article:tag" content="hierarchical" />
+    
+      <meta property="og:article:tag" content="clustering" />
+    
+      <meta property="og:article:tag" content="B2B" />
+    
+      <meta property="og:article:tag" content="topic" />
+    
+      <meta property="og:article:tag" content="Twitter" />
+    
+      <meta property="og:article:tag" content="NMF" />
+    
+      <meta property="og:article:tag" content="Natural Language Processing" />
+    
+  
+
+  <title>
+     Clustering of Fortune 500 companies based on Twitter activity &middot;  Krisztian Sandor&#39;s data science blog
+  </title>
+
+  <link rel="alternative stylesheet" href="https://kriszsandor.github.io/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://kriszsandor.github.io/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="https://kriszsandor.github.io/css/main.css" />
+  <link rel="stylesheet" href="https://kriszsandor.github.io/css/github.css" />
+  <link rel="stylesheet" href="https://kriszsandor.github.io/css/color-theme.css" />
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Sans+Pro:200,300,400" type="text/css">
+  <link rel="shortcut icon" href="https://kriszsandor.github.io/images/favicon.ico" />
+  <link rel="apple-touch-icon" href="https://kriszsandor.github.io/images/apple-touch-icon.png" />
+
+  <link rel="stylesheet" href="https://kriszsandor.github.io/css/custom.css" />
+
+  
+
+  
+
+  
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-130640046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-130640046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+  <script src="https://unpkg.com/vanilla-back-to-top@7.2.0/dist/vanilla-back-to-top.min.js"></script>
+
+  
+</head>
+<body>
+  <script>
+    addBackToTop({
+    backgroundColor: '#fff',
+    innerHTML: 'Back to Top',
+    textColor: '#333'
+    })
+  </script>
+  
+  <header class="global-header"  style="background-image:url(https://kriszsandor.github.io/images/background.png)">
+  
+    <section class="header-text">
+      <h1><a href="https://kriszsandor.github.io/">Krisztian Sandor&#39;s data science blog</a></h1>
+      
+        <h3 class="tag-line">
+          Using data science to solve business problems
+        </h3>
+      
+      
+        <a class="btn btn-default btn-home" href="https://kriszsandor.github.io/">
+          <i class="fa fa-angle-left" aria-hidden="true"></i>
+          &nbsp;Home
+        </a>
+      
+      
+      <div class="navbar-container">
+        
+          <a class="btn btn-default navbar-item" href="https://kriszsandor.github.io/pages/about">
+            About
+          </a>
+        
+      </div>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    </section>
+  </header>
+  <main class="container">
+
+
+
+<article>
+  <header class="article-title">
+    <h1 class="text-primary">Clustering of Fortune 500 companies based on Twitter activity</h1>
+  </header>
+  <div class="delimiter"></div>
+  <section>
+    
+
+<p><img src="/Post_images/20181210_Fletcher/Slide_images/Slide02.png" alt="png" /></p>
+
+<h3 id="1-importing-required-packages">1. Importing required packages</h3>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># twitter loader</span>
+<span style="color:#00f">import</span> <span style="color:#000">sys</span>
+<span style="color:#000">sys</span>.<span style="color:#000">path</span>.<span style="color:#000">append</span>(<span style="color:#5a2">&#39;[...]/GetOldTweets-python/&#39;</span>)
+<span style="color:#00f">import</span> <span style="color:#000">got3</span>
+
+<span style="color:#888;font-style:italic"># misc packages</span>
+<span style="color:#00f">from</span> <span style="color:#000">collections</span> <span style="color:#00f">import</span> <span style="color:#000">defaultdict</span>
+<span style="color:#00f">import</span> <span style="color:#000">pandas</span> <span style="color:#00f">as</span> <span style="color:#000">pd</span>
+<span style="color:#00f">import</span> <span style="color:#000">numpy</span> <span style="color:#00f">as</span> <span style="color:#000">np</span>
+<span style="color:#00f">import</span> <span style="color:#000">pickle</span> <span style="color:#00f">as</span> <span style="color:#000">pkl</span>
+<span style="color:#00f">from</span> <span style="color:#000">math</span> <span style="color:#00f">import</span> <span style="color:#000">isnan</span>
+<span style="color:#00f">import</span> <span style="color:#000">os</span>
+<span style="color:#00f">from</span> <span style="color:#000">time</span> <span style="color:#00f">import</span> <span style="color:#000">time</span>
+
+<span style="color:#888;font-style:italic"># Packages for scraping</span>
+<span style="color:#00f">from</span> <span style="color:#000">fake_useragent</span> <span style="color:#00f">import</span> <span style="color:#000">UserAgent</span>
+<span style="color:#00f">import</span> <span style="color:#000">re</span>
+<span style="color:#00f">import</span> <span style="color:#000">requests</span> <span style="color:#00f">as</span> <span style="color:#000">req</span>
+<span style="color:#00f">from</span> <span style="color:#000">bs4</span> <span style="color:#00f">import</span> <span style="color:#000">BeautifulSoup</span>
+<span style="color:#00f">from</span> <span style="color:#000">urllib.parse</span> <span style="color:#00f">import</span> <span style="color:#000">urljoin</span>
+
+<span style="color:#888;font-style:italic"># Packages for cleaning text</span>
+<span style="color:#00f">from</span> <span style="color:#000">string</span> <span style="color:#00f">import</span> <span style="color:#000">digits</span>, <span style="color:#000">punctuation</span>
+<span style="color:#00f">from</span> <span style="color:#000">nltk.corpus</span> <span style="color:#00f">import</span> <span style="color:#000">stopwords</span>
+<span style="color:#00f">from</span> <span style="color:#000">textwrap</span> <span style="color:#00f">import</span> <span style="color:#000">wrap</span>
+
+<span style="color:#888;font-style:italic"># Packages for unsupervised learning</span>
+<span style="color:#00f">from</span> <span style="color:#000">sklearn.feature_extraction.text</span> <span style="color:#00f">import</span>  <span style="color:#000">TfidfVectorizer</span>, <span style="color:#000">CountVectorizer</span>
+<span style="color:#00f">from</span> <span style="color:#000">sklearn.decomposition</span> <span style="color:#00f">import</span> <span style="color:#000">PCA</span>, <span style="color:#000">NMF</span>, <span style="color:#000">TruncatedSVD</span>
+<span style="color:#00f">from</span> <span style="color:#000">sklearn.preprocessing</span> <span style="color:#00f">import</span> <span style="color:#000">MinMaxScaler</span>
+
+<span style="color:#888;font-style:italic"># Packages for plotting</span>
+<span style="color:#00f">import</span> <span style="color:#000">matplotlib.pyplot</span> <span style="color:#00f">as</span> <span style="color:#000">plt</span>
+%<span style="color:#000">matplotlib</span> <span style="color:#000">inline</span>
+<span style="color:#00f">import</span> <span style="color:#000">seaborn</span> <span style="color:#00f">as</span> <span style="color:#000">sns</span>
+<span style="color:#000">sns</span>.<span style="color:#000">set</span>()</code></pre></div>
+<h3 id="2-setup-engine-to-scrape-twitter">2. Setup engine to scrape Twitter</h3>
+
+<p>To scrape Twitter and reach more-than-a-week-old tweets we need to bypass the official API. I found this neat solution online, called GetOldTweets-python.</p>
+
+<p>Quoting their documentation:<br />
+&gt; Twitter Official API has the bother limitation of time constraints, you can&rsquo;t get older tweets than a week.
+Some tools provide access to older tweets but in the most of them you have to spend some money before.
+I was searching other tools to do this job but I didn&rsquo;t found it, so after analyze how Twitter Search
+through browser works I understand its flow.
+Basically when you enter on Twitter page a scroll loader starts, if you scroll down you start to get more and more tweets,
+all through calls to a JSON provider. After mimic we get the best advantage of Twitter Search on browsers,
+it can search the deepest oldest tweets.</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">recent_tweets</span>(<span style="color:#000">username</span>=<span style="color:#000">False</span>, <span style="color:#000">query</span>=<span style="color:#000">False</span>, <span style="color:#000">max_tweets</span>=<span style="color:#3af">10</span>):
+    <span style="color:#5a2">&#39;&#39;&#39;
+</span><span style="color:#5a2">    Pulling recent tweets from a Twitter username and query custom combination.
+</span><span style="color:#5a2">    
+</span><span style="color:#5a2">    Input: username, query (e.g. a hashtag), number of tweets to pull
+</span><span style="color:#5a2">    Output: List of tweet text and metadata
+</span><span style="color:#5a2">    
+</span><span style="color:#5a2">    &#39;&#39;&#39;</span>
+
+    <span style="color:#000">d_tweets</span> = <span style="color:#000">defaultdict</span>(<span style="color:#000">list</span>)
+    <span style="color:#000">tweetCriteria</span> = <span style="color:#000">got3</span>.<span style="color:#000">manager</span>.<span style="color:#000">TweetCriteria</span>().<span style="color:#000">setMaxTweets</span>(<span style="color:#000">max_tweets</span>)
+    
+    <span style="color:#00f">if</span> <span style="color:#000">username</span> <span style="color:#00f">and</span> <span style="color:#000">query</span>:
+        <span style="color:#000">tweetCriteria</span> = <span style="color:#000">tweetCriteria</span>.<span style="color:#000">setUsername</span>(<span style="color:#000">username</span>).<span style="color:#000">setQuerySearch</span>(<span style="color:#000">query</span>)
+    <span style="color:#00f">elif</span> <span style="color:#000">username</span> <span style="color:#00f">and</span> <span style="color:#000">query</span>==<span style="color:#000">False</span>:
+        <span style="color:#000">tweetCriteria</span> = <span style="color:#000">tweetCriteria</span>.<span style="color:#000">setUsername</span>(<span style="color:#000">username</span>)
+    <span style="color:#00f">elif</span> <span style="color:#000">username</span>==<span style="color:#000">False</span> <span style="color:#00f">and</span> <span style="color:#000">query</span>:
+        <span style="color:#000">tweetCriteria</span> = <span style="color:#000">tweetCriteria</span>.<span style="color:#000">setQuerySearch</span>(<span style="color:#000">query</span>)
+    <span style="color:#00f">else</span>:
+        <span style="color:#00f">return</span> <span style="color:#000">False</span>
+    <span style="color:#000">tweets</span> = <span style="color:#000">got3</span>.<span style="color:#000">manager</span>.<span style="color:#000">TweetManager</span>.<span style="color:#000">getTweets</span>(<span style="color:#000">tweetCriteria</span>)
+    <span style="color:#00f">for</span> <span style="color:#000">i</span> <span style="color:#00f">in</span> <span style="color:#000">range</span>(<span style="color:#000">max_tweets</span>):
+        <span style="color:#888;font-style:italic">#print(f&#39;Retrieving tweet #{i+1} of {max_tweets}&#39;)</span>
+        <span style="color:#00f">try</span>:
+            <span style="color:#000">tweet_current</span> = <span style="color:#000">tweets</span>[<span style="color:#000">i</span>]
+            <span style="color:#000">d_tweets</span>[<span style="color:#000">tweet_current</span>.<span style="color:#000">id</span>] = [<span style="color:#000">tweet_current</span>.<span style="color:#000">permalink</span>, <span style="color:#000">tweet_current</span>.<span style="color:#000">username</span>, <span style="color:#000">tweet_current</span>.<span style="color:#000">date</span>, 
+                                  <span style="color:#000">tweet_current</span>.<span style="color:#000">text</span>, <span style="color:#000">tweet_current</span>.<span style="color:#000">retweets</span>, <span style="color:#000">tweet_current</span>.<span style="color:#000">favorites</span>, 
+                                  <span style="color:#000">tweet_current</span>.<span style="color:#000">mentions</span>, <span style="color:#000">tweet_current</span>.<span style="color:#000">hashtags</span>, <span style="color:#000">tweet_current</span>.<span style="color:#000">geo</span>]
+        <span style="color:#00f">except</span>:
+            <span style="color:#00f">return</span> <span style="color:#000">False</span>
+    <span style="color:#00f">return</span> <span style="color:#000">d_tweets</span></code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">tweet_dict_into_df</span>(<span style="color:#000">d_tweets</span>):
+    <span style="color:#5a2">&#39;&#39;&#39;
+</span><span style="color:#5a2">    Create a dataframe from pulled tweets
+</span><span style="color:#5a2">    &#39;&#39;&#39;</span>
+    
+    <span style="color:#000">df</span> = <span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>.<span style="color:#000">from_dict</span>(<span style="color:#000">d_tweets</span>, <span style="color:#000">orient</span>=<span style="color:#5a2">&#39;index&#39;</span>, <span style="color:#000">dtype</span>=<span style="color:#000">None</span>).<span style="color:#000">reset_index</span>()
+    <span style="color:#000">df</span>.<span style="color:#000">columns</span>=[<span style="color:#5a2">&#39;id&#39;</span>,<span style="color:#5a2">&#39;permalink&#39;</span>,<span style="color:#5a2">&#39;username&#39;</span>,<span style="color:#5a2">&#39;date&#39;</span>,<span style="color:#5a2">&#39;text&#39;</span>,<span style="color:#5a2">&#39;retweets&#39;</span>,<span style="color:#5a2">&#39;favorites&#39;</span>,<span style="color:#5a2">&#39;mentions&#39;</span>,<span style="color:#5a2">&#39;hashtags&#39;</span>,<span style="color:#5a2">&#39;geo&#39;</span>]
+    <span style="color:#00f">return</span> <span style="color:#000">df</span></code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">tweet_loader</span>(<span style="color:#000">current_username</span>=<span style="color:#000">False</span>,<span style="color:#000">current_query</span>=<span style="color:#000">False</span>,<span style="color:#000">current_tweets</span>=<span style="color:#3af">10</span>):
+    
+    <span style="color:#5a2">&#39;&#39;&#39;
+</span><span style="color:#5a2">    A function that pulls together pulling the tweet, putting it into a dataframe then saving it one-by-one 
+</span><span style="color:#5a2">    (in case internet collapses)
+</span><span style="color:#5a2">    &#39;&#39;&#39;</span>
+    
+    <span style="color:#00f">if</span> <span style="color:#000">current_query</span> <span style="color:#00f">and</span> <span style="color:#000">current_username</span>:
+        <span style="color:#000">naming</span> = <span style="color:#000">current_query</span> + <span style="color:#5a2">&#39;_&#39;</span> + <span style="color:#000">current_username</span>
+    <span style="color:#00f">elif</span> <span style="color:#000">current_query</span> <span style="color:#00f">and</span> <span style="color:#000">current_username</span>==<span style="color:#000">False</span>:
+        <span style="color:#000">naming</span> = <span style="color:#000">current_query</span>
+    <span style="color:#00f">elif</span> <span style="color:#000">current_query</span>==<span style="color:#000">False</span> <span style="color:#00f">and</span> <span style="color:#000">current_username</span>:
+        <span style="color:#000">naming</span> = <span style="color:#000">current_username</span>
+    
+    <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Downloading {current_tweets} tweets for {naming}&#39;</span>)
+    <span style="color:#000">d_tweets</span> = <span style="color:#000">recent_tweets</span>(<span style="color:#000">username</span>=<span style="color:#000">current_username</span>, <span style="color:#000">query</span>=<span style="color:#000">current_query</span>, <span style="color:#000">max_tweets</span>=<span style="color:#000">current_tweets</span>)
+    
+    <span style="color:#00f">if</span> <span style="color:#000">d_tweets</span>:
+        <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Saving to df&#39;</span>)
+        <span style="color:#000">df</span> = <span style="color:#000">tweet_dict_into_df</span>(<span style="color:#000">d_tweets</span>)
+
+        <span style="color:#000">filename</span> = <span style="color:#000">time</span>.<span style="color:#000">strftime</span>(<span style="color:#5a2">&#34;%Y%m</span><span style="color:#5a2">%d</span><span style="color:#5a2">-%H%M%S&#34;</span>) + <span style="color:#5a2">&#39;_&#39;</span> + <span style="color:#000">naming</span> + <span style="color:#5a2">&#39;_recent_&#39;</span> + <span style="color:#000">str</span>(<span style="color:#000">current_tweets</span>) + <span style="color:#5a2">&#39;_tweets.pkl&#39;</span>
+        <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Saving dataframe as {filename}&#39;</span>)
+        <span style="color:#000">df</span>.<span style="color:#000">to_pickle</span>(<span style="color:#000">filename</span>)
+    
+        <span style="color:#00f">return</span> <span style="color:#000">df</span>
+    
+    <span style="color:#00f">else</span>:
+        <span style="color:#00f">return</span> <span style="color:#000">False</span></code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">twitter_account_search</span>():
+    
+    <span style="color:#5a2">&#39;&#39;&#39;
+</span><span style="color:#5a2">    As a subject of this project, I decided to use a list of Fortune 500 companies for clustering. 
+</span><span style="color:#5a2">    1. I first obtained the website urls&#39; of the companies via BeautifulSoup
+</span><span style="color:#5a2">    2. Then I opened the website of each company and looked for twitter ids using RegEx
+</span><span style="color:#5a2">    3. Saved each companies&#39; Twitter ID where it was found
+</span><span style="color:#5a2">    
+</span><span style="color:#5a2">    &#39;&#39;&#39;</span>
+    
+    <span style="color:#000">ua</span> = <span style="color:#000">UserAgent</span>()
+    <span style="color:#000">header</span> = {<span style="color:#5a2">&#39;User-Agent&#39;</span>: <span style="color:#000">ua</span>.<span style="color:#000">random</span>}
+    <span style="color:#000">url_fortune</span> = <span style="color:#5a2">&#39;https://www.zyxware.com/articles/4344/list-of-fortune-500-companies-and-their-websites&#39;</span>
+    <span style="color:#000">r_fortunelist</span> = <span style="color:#000">req</span>.<span style="color:#000">get</span>(<span style="color:#000">url_fortune</span>, <span style="color:#000">headers</span>=<span style="color:#000">header</span>)
+    <span style="color:#000">soup_fortune</span> = <span style="color:#000">BeautifulSoup</span>(<span style="color:#000">r_fortunelist</span>.<span style="color:#000">content</span>,<span style="color:#5a2">&#34;lxml&#34;</span>)
+
+    <span style="color:#000">d_twitter</span> = <span style="color:#000">defaultdict</span>(<span style="color:#000">list</span>)
+    <span style="color:#00f">for</span> <span style="color:#000">a</span> <span style="color:#00f">in</span> <span style="color:#000">soup_fortune</span>.<span style="color:#000">find</span>(<span style="color:#5a2">&#39;table&#39;</span>, {<span style="color:#5a2">&#39;class&#39;</span>:<span style="color:#5a2">&#39;data-table&#39;</span>}).<span style="color:#000">tbody</span>.<span style="color:#000">find_all</span>(<span style="color:#5a2">&#39;a&#39;</span>):
+        <span style="color:#000">url_company</span> = <span style="color:#000">a</span>.<span style="color:#000">attrs</span>[<span style="color:#5a2">&#39;href&#39;</span>]
+        <span style="color:#00f">if</span> <span style="color:#00f">not</span> <span style="color:#000">d_twitter</span>[<span style="color:#000">url_company</span>]:
+            <span style="color:#00f">try</span>:
+                <span style="color:#000">site_content</span> = <span style="color:#000">req</span>.<span style="color:#000">get</span>(<span style="color:#000">url_company</span>, <span style="color:#000">headers</span>=<span style="color:#000">header</span>).<span style="color:#000">content</span>
+                <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Gathering {url_company}&#39;</span>)
+            <span style="color:#00f">except</span>:
+                <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Website not found for {url_company}&#39;</span>)
+            <span style="color:#00f">try</span>:
+                <span style="color:#000">twitter_account</span> = <span style="color:#000">re</span>.<span style="color:#000">search</span>(<span style="color:#5a2">r</span><span style="color:#5a2">&#39;twitter.com/([\w\d]+)&#39;</span>,<span style="color:#000">str</span>(<span style="color:#000">site_content</span>).<span style="color:#000">lower</span>()).<span style="color:#000">group</span>(<span style="color:#3af">1</span>)
+                <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Twitter found: {twitter_account}&#39;</span>)
+                <span style="color:#000">d_twitter</span>[<span style="color:#000">url_company</span>] = <span style="color:#000">twitter_account</span>
+            <span style="color:#00f">except</span>:
+                <span style="color:#000">d_twitter</span>[<span style="color:#000">url_company</span>] = <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+                <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Twitter not found&#39;</span>)
+        <span style="color:#00f">else</span>:
+            <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Twitter already stored for {url_company}&#39;</span>)
+    
+    <span style="color:#000">pkl</span>.<span style="color:#000">dump</span>(<span style="color:#000">d_twitter</span>, <span style="color:#000">open</span>(<span style="color:#5a2">&#39;twitter_ids.pkl&#39;</span>, <span style="color:#5a2">&#39;wb&#39;</span>))
+    <span style="color:#00f">return</span> <span style="color:#000">d_twitter</span></code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">own_read_pickle</span>(<span style="color:#000">filename</span>):
+    
+    <span style="color:#5a2">&#39;&#39;&#39;
+</span><span style="color:#5a2">    I built this unpickler as the built-in one in Pandas seemed to not be able to handle the task efficiently
+</span><span style="color:#5a2">    &#39;&#39;&#39;</span>
+
+    <span style="color:#00f">import</span> <span style="color:#000">pickle</span> <span style="color:#00f">as</span> <span style="color:#000">pkl</span>
+    <span style="color:#000">objects</span> = []
+    <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Pickle load of {filename} started&#39;</span>)
+    <span style="color:#00f">with</span> (<span style="color:#000">open</span>(<span style="color:#000">filename</span>, <span style="color:#5a2">&#39;rb&#39;</span>)) <span style="color:#00f">as</span> <span style="color:#000">openfile</span>:
+        <span style="color:#00f">while</span> <span style="color:#000">True</span>:
+            <span style="color:#00f">try</span>:
+                <span style="color:#000">objects</span>.<span style="color:#000">append</span>(<span style="color:#000">pkl</span>.<span style="color:#000">load</span>(<span style="color:#000">openfile</span>))
+            <span style="color:#00f">except</span> <span style="color:#000">EOFError</span>:
+                <span style="color:#00f">break</span>
+
+    <span style="color:#000">df_output</span> = <span style="color:#000">objects</span>[<span style="color:#3af">0</span>]
+    <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Pickle load of {filename} finished&#39;</span>)
+    <span style="color:#00f">return</span> <span style="color:#000">df_output</span></code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">download_tweets</span>():
+    
+    <span style="color:#5a2">&#39;&#39;&#39;
+</span><span style="color:#5a2">    Download Fortune 500 companies&#39; most recent 1000 tweets into pickle databases
+</span><span style="color:#5a2">    &#39;&#39;&#39;</span>
+    
+    <span style="color:#000">d_twitter</span> = <span style="color:#000">own_read_pickle</span>(<span style="color:#5a2">&#39;twitter_ids.pkl&#39;</span>)
+    <span style="color:#000">do</span>=<span style="color:#000">False</span>
+    <span style="color:#00f">for</span> <span style="color:#000">web</span>, <span style="color:#000">handler</span> <span style="color:#00f">in</span> [(<span style="color:#000">k</span>,<span style="color:#000">v</span>) <span style="color:#00f">for</span> <span style="color:#000">k</span>,<span style="color:#000">v</span> <span style="color:#00f">in</span> <span style="color:#000">d_twitter</span>.<span style="color:#000">items</span>() <span style="color:#00f">if</span> (<span style="color:#000">v</span> <span style="color:#00f">is</span> <span style="color:#000">np</span>.<span style="color:#000">nan</span> <span style="color:#00f">or</span> <span style="color:#000">v</span> != <span style="color:#000">v</span>)==<span style="color:#000">False</span>]:
+        <span style="color:#00f">if</span> <span style="color:#000">handler</span>==<span style="color:#5a2">&#39;chemours&#39;</span>:
+            <span style="color:#000">do</span>=<span style="color:#000">True</span>
+
+        <span style="color:#00f">if</span> <span style="color:#000">do</span>:
+            <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;*&#39;</span>*<span style="color:#3af">50</span>)
+            <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Collecting tweets for {handler}&#39;</span>)
+            <span style="color:#000">df_tweets</span> = <span style="color:#000">tweet_loader</span>(<span style="color:#000">current_username</span>=<span style="color:#000">handler</span>,<span style="color:#000">current_query</span>=<span style="color:#000">False</span>,<span style="color:#000">current_tweets</span>=<span style="color:#3af">1000</span>)
+            <span style="color:#888;font-style:italic">#dfs.append(df_tweets)</span>
+
+    <span style="color:#888;font-style:italic">#pkl.dump(dfs, open(&#39;twitter_dfs.pkl&#39;, &#39;wb&#39;))</span>
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;-*-&#39;</span>*<span style="color:#3af">50</span>)
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Operation finished&#39;</span>)</code></pre></div>
+<h3 id="3-prepare-downloaded-tweets-for-natural-language-processing">3. Prepare downloaded tweets for Natural Language Processing</h3>
+
+<p>To prepare tweets for processing, the following steps are undertaken:
+- Remove: numbers, URLs, punctuation, @id twitter references
+- Clear: non-word characters, leading whitespaces, double-spaces, manual+dict-based stopwords</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">clean_tweet</span>(<span style="color:#000">df</span>):
+    <span style="color:#888;font-style:italic"># Collapsing entire df.text into a string</span>
+    <span style="color:#000">tweet_docs</span> = <span style="color:#000">df</span>.<span style="color:#000">text</span>.<span style="color:#000">tolist</span>()
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Extracting company names&#39;</span>)
+    <span style="color:#000">tweet_ids</span> = <span style="color:#000">df</span>.<span style="color:#000">permalink</span>.<span style="color:#000">str</span>.<span style="color:#000">extract</span>(<span style="color:#5a2">r</span><span style="color:#5a2">&#39;twitter\.com\/([\w\d]+)&#39;</span>)[<span style="color:#3af">0</span>].<span style="color:#000">tolist</span>()
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Extracting company names finished&#39;</span>)
+    
+    <span style="color:#00f">for</span> <span style="color:#000">i</span>, <span style="color:#000">doc</span> <span style="color:#00f">in</span> <span style="color:#000">enumerate</span>(<span style="color:#000">tweet_docs</span>):
+        
+        <span style="color:#000">doc</span> = <span style="color:#000">str</span>(<span style="color:#000">doc</span>).<span style="color:#000">lower</span>()
+        
+        <span style="color:#888;font-style:italic"># Removing numbers</span>
+        <span style="color:#000">remove_digits</span> = <span style="color:#000">str</span>.<span style="color:#000">maketrans</span>(<span style="color:#5a2">&#39;&#39;</span>, <span style="color:#5a2">&#39;&#39;</span>, <span style="color:#000">digits</span>)
+        <span style="color:#000">doc</span> = <span style="color:#000">doc</span>.<span style="color:#000">translate</span>(<span style="color:#000">remove_digits</span>)
+
+        <span style="color:#888;font-style:italic"># Removing links from the text</span>
+        <span style="color:#000">doc</span> = <span style="color:#000">re</span>.<span style="color:#000">sub</span>(<span style="color:#5a2">r</span><span style="color:#5a2">&#39;http\S+&#39;</span>, <span style="color:#5a2">&#39;&#39;</span>, <span style="color:#000">doc</span>, <span style="color:#000">flags</span>=<span style="color:#000">re</span>.<span style="color:#000">MULTILINE</span>)
+        <span style="color:#000">doc</span> = <span style="color:#000">re</span>.<span style="color:#000">sub</span>(<span style="color:#5a2">r</span><span style="color:#5a2">&#39;pic.twitter.com\S+&#39;</span>, <span style="color:#5a2">&#39;&#39;</span>, <span style="color:#000">doc</span>, <span style="color:#000">flags</span>=<span style="color:#000">re</span>.<span style="color:#000">MULTILINE</span>)
+        
+        <span style="color:#888;font-style:italic"># Removing punctuation</span>
+        <span style="color:#000">remove_punct</span> = <span style="color:#000">str</span>.<span style="color:#000">maketrans</span>(<span style="color:#5a2">&#39;&#39;</span>, <span style="color:#5a2">&#39;&#39;</span>, <span style="color:#000">punctuation</span>.<span style="color:#000">replace</span>(<span style="color:#5a2">&#39;@&#39;</span>,<span style="color:#5a2">&#39;&#39;</span>))
+        <span style="color:#000">doc</span> = <span style="color:#000">doc</span>.<span style="color:#000">translate</span>(<span style="color:#000">remove_punct</span>)
+        
+        <span style="color:#888;font-style:italic"># Removing twitter @someone references</span>
+        <span style="color:#000">doc</span> = <span style="color:#000">re</span>.<span style="color:#000">sub</span>(<span style="color:#5a2">r</span><span style="color:#5a2">&#39;@\s\S+&#39;</span>, <span style="color:#5a2">&#39;&#39;</span>, <span style="color:#000">doc</span>, <span style="color:#000">flags</span>=<span style="color:#000">re</span>.<span style="color:#000">MULTILINE</span>)
+        
+        <span style="color:#888;font-style:italic"># Removing all other non-word characters</span>
+        <span style="color:#000">doc</span> = <span style="color:#000">re</span>.<span style="color:#000">sub</span>(<span style="color:#5a2">r</span><span style="color:#5a2">&#39;[^a-zA-Z0-9-\s_.]&#39;</span>, <span style="color:#5a2">&#39;&#39;</span>, <span style="color:#000">doc</span>, <span style="color:#000">flags</span>=<span style="color:#000">re</span>.<span style="color:#000">MULTILINE</span>)
+        
+        <span style="color:#888;font-style:italic"># Removing leading whitespaces, \n, double-spaces</span>
+        <span style="color:#000">doc</span> = <span style="color:#000">doc</span>.<span style="color:#000">lstrip</span>()
+        <span style="color:#000">doc</span> = <span style="color:#000">re</span>.<span style="color:#000">sub</span>(<span style="color:#5a2">r</span><span style="color:#5a2">&#39;\s{2}&#39;</span>, <span style="color:#5a2">&#39; &#39;</span>, <span style="color:#000">doc</span>, <span style="color:#000">flags</span>=<span style="color:#000">re</span>.<span style="color:#000">MULTILINE</span>)
+                
+        <span style="color:#888;font-style:italic"># Removing manual stopwords</span>
+        <span style="color:#000">stopwords</span> = [<span style="color:#5a2">&#39;dm&#39;</span>,<span style="color:#5a2">&#39;metlife&#39;</span>,<span style="color:#5a2">&#39;auto&#39;</span>,<span style="color:#5a2">&#39;quote&#39;</span>,<span style="color:#5a2">&#39;warner&#39;</span>,<span style="color:#5a2">&#39;time&#39;</span>,<span style="color:#5a2">&#39;twc&#39;</span>,<span style="color:#5a2">&#39;cable&#39;</span>,
+                     <span style="color:#5a2">&#39;thanks&#39;</span>,<span style="color:#5a2">&#39;sharing&#39;</span>,<span style="color:#5a2">&#39;thank&#39;</span>,<span style="color:#5a2">&#39;hello&#39;</span>,<span style="color:#5a2">&#39;hi&#39;</span>,<span style="color:#5a2">&#39;able&#39;</span>,<span style="color:#5a2">&#39;need&#39;</span>,<span style="color:#5a2">&#39;want&#39;</span>,
+                     <span style="color:#5a2">&#39;email&#39;</span>,<span style="color:#5a2">&#39;im&#39;</span>,<span style="color:#5a2">&#39;new&#39;</span>,<span style="color:#5a2">&#39;great&#39;</span>,<span style="color:#5a2">&#39;thats&#39;</span>,<span style="color:#5a2">&#39;day&#39;</span>,<span style="color:#5a2">&#39;nb&#39;</span>,<span style="color:#5a2">&#39;hope&#39;</span>,<span style="color:#5a2">&#39;work&#39;</span>,
+                     <span style="color:#5a2">&#39;hear&#39;</span>,<span style="color:#5a2">&#39;happy&#39;</span>,<span style="color:#5a2">&#39;know&#39;</span>,<span style="color:#5a2">&#39;let&#39;</span>,<span style="color:#5a2">&#39;share&#39;</span>,<span style="color:#5a2">&#39;like&#39;</span>,<span style="color:#5a2">&#39;wed&#39;</span>,<span style="color:#5a2">&#39;sounds&#39;</span>,<span style="color:#5a2">&#39;youd&#39;</span>,
+                     <span style="color:#5a2">&#39;look&#39;</span>,<span style="color:#5a2">&#39;looks&#39;</span>,<span style="color:#5a2">&#39;id&#39;</span>,<span style="color:#5a2">&#39;info&#39;</span>,<span style="color:#5a2">&#39;information&#39;</span>,<span style="color:#5a2">&#39;link&#39;</span>,<span style="color:#5a2">&#39;follow&#39;</span>,<span style="color:#5a2">&#39;glad&#39;</span>,
+                     <span style="color:#5a2">&#39;youre&#39;</span>,<span style="color:#5a2">&#39;welcome&#39;</span>,<span style="color:#5a2">&#39;enjoyed&#39;</span>,<span style="color:#5a2">&#39;enjoy&#39;</span>,<span style="color:#5a2">&#39;chris&#39;</span>,<span style="color:#5a2">&#39;team&#39;</span>, <span style="color:#5a2">&#39;details&#39;</span>
+                     <span style="color:#5a2">&#39;private&#39;</span>,<span style="color:#5a2">&#39;additional&#39;</span>,<span style="color:#5a2">&#39;socialmediaprudentialcom&#39;</span>,<span style="color:#5a2">&#39;free&#39;</span>,<span style="color:#5a2">&#39;feel&#39;</span>,
+                     <span style="color:#5a2">&#39;think&#39;</span>,<span style="color:#5a2">&#39;insurance&#39;</span>,<span style="color:#5a2">&#39;home&#39;</span>,<span style="color:#5a2">&#39;dont&#39;</span>,<span style="color:#5a2">&#39;today&#39;</span>,<span style="color:#5a2">&#39;spun&#39;</span>,<span style="color:#5a2">&#39;company&#39;</span>,<span style="color:#5a2">&#39;isnt&#39;</span>,
+                     <span style="color:#5a2">&#39;prudential&#39;</span>,<span style="color:#5a2">&#39;southern&#39;</span>,<span style="color:#5a2">&#39;plc&#39;</span>,<span style="color:#5a2">&#39;regarding&#39;</span>,<span style="color:#5a2">&#39;way&#39;</span>,<span style="color:#5a2">&#39;customerrelationsautonationcom&#39;</span>,
+                     <span style="color:#5a2">&#39;better&#39;</span>,<span style="color:#5a2">&#39;having&#39;</span>,<span style="color:#5a2">&#39;using&#39;</span>,<span style="color:#5a2">&#39;world&#39;</span>,<span style="color:#5a2">&#39;check&#39;</span>,<span style="color:#5a2">&#39;scaleforgood&#39;</span>,<span style="color:#5a2">&#39;goal&#39;</span>,<span style="color:#5a2">&#39;mcdonalds&#39;</span>,
+                     <span style="color:#5a2">&#39;come&#39;</span>,<span style="color:#5a2">&#39;social&#39;</span>,<span style="color:#5a2">&#39;use&#39;</span>,<span style="color:#5a2">&#39;reaching&#39;</span>,<span style="color:#5a2">&#39;ok&#39;</span>,<span style="color:#5a2">&#39;use&#39;</span>,<span style="color:#5a2">&#39;tweet&#39;</span>,<span style="color:#5a2">&#39;john&#39;</span>,<span style="color:#5a2">&#39;deere&#39;</span>,<span style="color:#5a2">&#39;provide&#39;</span>,<span style="color:#5a2">&#39;visit&#39;</span>,
+                     <span style="color:#5a2">&#39;visiting&#39;</span>,<span style="color:#5a2">&#39;state&#39;</span>,<span style="color:#5a2">&#39;memberservicesmolinahealthcarecom&#39;</span>,<span style="color:#5a2">&#39;ph&#39;</span>,<span style="color:#5a2">&#39;make&#39;</span>,<span style="color:#5a2">&#39;sure&#39;</span>,<span style="color:#5a2">&#39;helpanthemcom&#39;</span>,
+                     <span style="color:#5a2">&#39;person&#39;</span>,<span style="color:#5a2">&#39;pls&#39;</span>,<span style="color:#5a2">&#39;retweet&#39;</span>,<span style="color:#5a2">&#39;best&#39;</span>,<span style="color:#5a2">&#39;oh&#39;</span>,<span style="color:#5a2">&#39;ty&#39;</span>
+                    ]
+        <span style="color:#000">doc</span> = <span style="color:#5a2">&#39; &#39;</span>.<span style="color:#000">join</span>([<span style="color:#000">word</span> <span style="color:#00f">for</span> <span style="color:#000">word</span> <span style="color:#00f">in</span> <span style="color:#000">doc</span>.<span style="color:#000">split</span>() <span style="color:#00f">if</span> <span style="color:#000">word</span> <span style="color:#00f">not</span> <span style="color:#00f">in</span> <span style="color:#000">stopwords</span>])
+        
+        <span style="color:#888;font-style:italic"># Modifying tweet_docs one-by-one to return document corpus</span>
+        <span style="color:#000">tweet_docs</span>[<span style="color:#000">i</span>]=<span style="color:#000">doc</span>
+    
+    <span style="color:#000">cleaned_tweets</span> = <span style="color:#000">list</span>(<span style="color:#000">zip</span>(<span style="color:#000">tweet_ids</span>,<span style="color:#000">tweet_docs</span>))
+    
+    <span style="color:#00f">return</span> <span style="color:#000">cleaned_tweets</span></code></pre></div>
+<h3 id="4-extract-topics-from-tweets">4. Extract &lsquo;topics&rsquo; from tweets</h3>
+
+<p>Using Truncated SVD (aka LSI) and NMF modelling techniques I am extracting topics (or from the model&rsquo;s perspective, principal components) from the tweets.</p>
+
+<p>To vectorize the text tokens I decided to use TfidfVectorizer to account for differing tweet lenghts.</p>
+
+<p>To clarify &lsquo;human&rsquo; meanings of the model-identified topics, I am printing out 20 keywords that best describe each of them.</p>
+
+<p><img src="/Post_images/20181210_Fletcher/Slide_images/Slide03.png" alt="png" /></p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">print_top_words</span>(<span style="color:#000">model</span>, <span style="color:#000">feature_names</span>, <span style="color:#000">n_top_words</span>):
+    <span style="color:#00f">for</span> <span style="color:#000">topic_idx</span>, <span style="color:#000">topic</span> <span style="color:#00f">in</span> <span style="color:#000">enumerate</span>(<span style="color:#000">model</span>.<span style="color:#000">components_</span>):
+        <span style="color:#000">message</span> = <span style="color:#5a2">&#34;Topic #</span><span style="color:#5a2">%d</span><span style="color:#5a2">: &#34;</span> % <span style="color:#000">topic_idx</span>
+        <span style="color:#000">message</span> += <span style="color:#5a2">&#34; &#34;</span>.<span style="color:#000">join</span>([<span style="color:#000">feature_names</span>[<span style="color:#000">i</span>]
+                             <span style="color:#00f">for</span> <span style="color:#000">i</span> <span style="color:#00f">in</span> <span style="color:#000">topic</span>.<span style="color:#000">argsort</span>()[:-<span style="color:#000">n_top_words</span> - <span style="color:#3af">1</span>:-<span style="color:#3af">1</span>]])
+        <span style="color:#00f">print</span>(<span style="color:#000">message</span>)
+    <span style="color:#00f">print</span>()
+
+<span style="color:#00f">def</span> <span style="color:#000">topic_models</span>(<span style="color:#000">tweet_id_string</span>,<span style="color:#000">nmf_n_components</span>=<span style="color:#3af">40</span>,<span style="color:#000">lsi_n_components</span>=<span style="color:#3af">300</span>):    
+
+    <span style="color:#000">n_features</span> = <span style="color:#3af">1000</span>
+    <span style="color:#000">n_top_words</span> = <span style="color:#3af">20</span>
+    <span style="color:#000">tweet_string</span> = [<span style="color:#000">t</span> <span style="color:#00f">for</span> <span style="color:#000">_</span>,<span style="color:#000">t</span> <span style="color:#00f">in</span> <span style="color:#000">tweet_id_string</span>]
+
+    <span style="color:#888;font-style:italic"># Use tf-idf features for NMF.</span>
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Vectorizing...&#39;</span>)
+    <span style="color:#000">tfidf_vectorizer</span> = <span style="color:#000">TfidfVectorizer</span>(<span style="color:#000">max_df</span>=<span style="color:#3af">0.3</span>, <span style="color:#000">min_df</span>=<span style="color:#3af">2</span>,
+                                       <span style="color:#000">stop_words</span>=<span style="color:#5a2">&#39;english&#39;</span>)
+    
+    <span style="color:#000">tfidf</span> = <span style="color:#000">tfidf_vectorizer</span>.<span style="color:#000">fit_transform</span>(<span style="color:#000">tweet_string</span>)
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Vectorizing done&#39;</span>)
+    
+    <span style="color:#00f">if</span> <span style="color:#000">lsi_n_components</span>&gt;<span style="color:#3af">0</span>:
+        
+        <span style="color:#000">modelLSI</span> = <span style="color:#000">TruncatedSVD</span>(<span style="color:#000">n_components</span>=<span style="color:#000">lsi_n_components</span>, 
+                             <span style="color:#000">algorithm</span>=<span style="color:#5a2">&#39;randomized&#39;</span>,
+                             <span style="color:#000">n_iter</span>=<span style="color:#3af">10</span>, <span style="color:#000">random_state</span>=<span style="color:#3af">42</span>)
+        <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Fitting LSI model&#39;</span>)
+        <span style="color:#000">lsi</span> = <span style="color:#000">modelLSI</span>.<span style="color:#000">fit</span>(<span style="color:#000">tfidf</span>)
+        <span style="color:#000">lsi_doc_topics</span> = <span style="color:#000">lsi</span>.<span style="color:#000">transform</span>(<span style="color:#000">tfidf</span>)
+        <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Finished fitting LSI model&#39;</span>)
+        
+    <span style="color:#00f">else</span>:
+        <span style="color:#000">lsi</span> = <span style="color:#000">None</span>
+        <span style="color:#000">lsi_doc_topics</span> = <span style="color:#000">None</span>
+
+    <span style="color:#888;font-style:italic"># Set up the NMF</span>
+    <span style="color:#000">modelNMF</span> = <span style="color:#000">NMF</span>(<span style="color:#000">n_components</span>=<span style="color:#000">nmf_n_components</span>)
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Fitting NMF model&#39;</span>)
+    <span style="color:#000">nmf</span> = <span style="color:#000">modelNMF</span>.<span style="color:#000">fit</span>(<span style="color:#000">tfidf</span>)
+    <span style="color:#000">nmf_doc_topics</span> = <span style="color:#000">nmf</span>.<span style="color:#000">transform</span>(<span style="color:#000">tfidf</span>)
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Finished fitting NMF model&#39;</span>)
+    
+    <span style="color:#00f">import</span> <span style="color:#000">time</span>
+    <span style="color:#000">filename</span> = <span style="color:#000">time</span>.<span style="color:#000">strftime</span>(<span style="color:#5a2">&#34;%Y%m</span><span style="color:#5a2">%d</span><span style="color:#5a2">-%H%M%S&#34;</span>) + <span style="color:#5a2">&#39;_nmf_&#39;</span> + <span style="color:#000">str</span>(<span style="color:#000">nmf_n_components</span>) + <span style="color:#5a2">&#39;.sav&#39;</span>
+    <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Saving nmf model as {filename}&#39;</span>)
+    <span style="color:#000">pkl</span>.<span style="color:#000">dump</span>(<span style="color:#000">nmf</span>, <span style="color:#000">open</span>(<span style="color:#000">filename</span>, <span style="color:#5a2">&#39;wb&#39;</span>))
+    <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;nmf model saved as {filename}&#39;</span>)
+    
+    <span style="color:#00f">if</span> <span style="color:#000">lsi_n_components</span>&gt;<span style="color:#3af">0</span>:
+        <span style="color:#000">filename</span> = <span style="color:#000">time</span>.<span style="color:#000">strftime</span>(<span style="color:#5a2">&#34;%Y%m</span><span style="color:#5a2">%d</span><span style="color:#5a2">-%H%M%S&#34;</span>) + <span style="color:#5a2">&#39;_lsi_&#39;</span> + <span style="color:#000">str</span>(<span style="color:#000">lsi_n_components</span>) + <span style="color:#5a2">&#39;.sav&#39;</span>
+        <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Saving lsi model as {filename}&#39;</span>)
+        <span style="color:#000">pkl</span>.<span style="color:#000">dump</span>(<span style="color:#000">lsi</span>, <span style="color:#000">open</span>(<span style="color:#000">filename</span>, <span style="color:#5a2">&#39;wb&#39;</span>))
+        <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;lsi model saved as {filename}&#39;</span>)
+    
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;*&#39;</span>*<span style="color:#3af">20</span>,<span style="color:#5a2">&#39;Printing NMF topics&#39;</span>,<span style="color:#5a2">&#39;*&#39;</span>*<span style="color:#3af">20</span>)
+    <span style="color:#000">tfidf_feature_names</span> = <span style="color:#000">tfidf_vectorizer</span>.<span style="color:#000">get_feature_names</span>()
+    <span style="color:#000">print_top_words</span>(<span style="color:#000">nmf</span>, <span style="color:#000">tfidf_feature_names</span>, <span style="color:#000">n_top_words</span>)
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;*&#39;</span>*<span style="color:#3af">20</span>,<span style="color:#5a2">&#39;Print finished&#39;</span>,<span style="color:#5a2">&#39;*&#39;</span>*<span style="color:#3af">20</span>)
+    
+    <span style="color:#00f">return</span> <span style="color:#000">tfidf_vectorizer</span>, <span style="color:#000">nmf</span>, <span style="color:#000">nmf_doc_topics</span>, <span style="color:#000">lsi</span>, <span style="color:#000">lsi_doc_topics</span></code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">read_and_clean</span>(<span style="color:#000">nmf_n_components</span>=<span style="color:#3af">40</span>,<span style="color:#000">lsi_n_components</span>=<span style="color:#3af">300</span>):
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Reading data&#39;</span>)
+    <span style="color:#000">df</span> = <span style="color:#000">pd</span>.<span style="color:#000">read_pickle</span>(<span style="color:#5a2">&#39;all_comp_twitter_df.pkl&#39;</span>)
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Finished&#39;</span>)
+    
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Cleaning tweets&#39;</span>)
+    <span style="color:#000">tweet_string</span> = <span style="color:#000">clean_tweet</span>(<span style="color:#000">df</span>)
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Cleaning tweets finished&#39;</span>)
+    
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Starting topic model algorithm&#39;</span>)
+    <span style="color:#000">tfidf_vectorizer</span>, <span style="color:#000">nmf</span>, <span style="color:#000">nmf_doc_topics</span>, <span style="color:#000">lsi</span>, <span style="color:#000">lsi_doc_topics</span>=<span style="color:#000">topic_models</span>(<span style="color:#000">tweet_string</span>,<span style="color:#000">nmf_n_components</span>,<span style="color:#000">lsi_n_components</span>)
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Topic model algorithm finished&#39;</span>)
+    
+    <span style="color:#00f">return</span> <span style="color:#000">tweet_string</span>, <span style="color:#000">tfidf_vectorizer</span>, <span style="color:#000">nmf</span>, <span style="color:#000">nmf_doc_topics</span>, <span style="color:#000">lsi</span>, <span style="color:#000">lsi_doc_topics</span></code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">tweet_string</span>, <span style="color:#000">tfidf_vectorizer</span>, <span style="color:#000">nmf</span>, <span style="color:#000">nmf_doc_topics</span>, <span style="color:#000">lsi</span>, <span style="color:#000">lsi_doc_topics</span> = <span style="color:#000">read_and_clean</span>(<span style="color:#000">nmf_n_components</span>=<span style="color:#3af">15</span>,
+                                                                                              <span style="color:#000">lsi_n_components</span>=<span style="color:#3af">0</span>)</code></pre></div>
+<pre><code>Reading data
+Finished
+Cleaning tweets
+Extracting company names
+Extracting company names finished
+Cleaning tweets finished
+Starting topic model algorithm
+Vectorizing...
+Vectorizing done
+Fitting NMF model
+Finished fitting NMF model
+Saving nmf model
+nmf model saved
+**************************************************
+******************** Printing NMF topics ********************
+Topic #0: send date address assist letters numbers barcode upc delivery code review account mailing note inquiry learn possible question bar gladly
+Topic #1: simplicity complicated enjoying expensive savings score retirement mb submission win chance awesome story issues save progressive ally overtime big money
+Topic #2: help shoutout issue right tips numbers letters concern accomplished issues barcode concerned thx date save resolve theres gets protect family
+Topic #3: affiliated separate called independent definitely ago spectrum years pharmacy unaffiliated cablespectrum shoulder pharmacies usa says anymore footlocker owned agent pm
+Topic #4: sorry experience relations frustration corporate trouble assist happened thx inconvenience issue cm fix plz delay pm directly ur order reach
+Topic #5: learn read future products packaging available business solutions restaurants just join technology recycling latest people data working health power booth
+Topic #6: number phone address order claim account policy reach issue delivery review confirmation apologize assist directly service concern zip card code
+Topic #7: details right experience issues concern inquiry apologize concerns appliances mind bad ge eresponsegeappliancescom situation chance sending rewards gets include send
+Topic #8: love reply photo granted website awesome feature hearing fans customers agree terms appreciate conditions seeing okay okdeere image future marketing
+Topic #9: contact assist reach directly respond media queries followup apologize local discuss member policy service center concerns consumer questions frustrating assistance
+Topic #10: store location feedback appreciate attention bringing pass leadership appropriate management apologize local product director parties stores comments shared concerns available
+Topic #11: good luck looking applepay visa morning sweeps forward code zip including service address awesome exciting nice taste afternoon news idea
+Topic #12: proud year support family excited accomplished named review partner community employees th congratulations sponsor orangeblooded list congrats communities companies honored
+Topic #13: customer service experience relations corporate respond media queries followup feedback issue formal care address representative apologize center submit question contacting
+Topic #14: message direct private assistance address reply responded order management send service sent issue concerns account apologize afternoon tag received morning
+
+******************** Print finished ********************
+Topic model algorithm finished
+</code></pre>
+
+<h3 id="5-naming-the-topics">5. Naming the topics</h3>
+
+<p>As a next step, I manually tried to make sense of the above identified topics, and name them as seen below. Arguably, these are meaningful topics for a Fortune 500&rsquo;s twitter feed.</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">topic_names</span>=[<span style="color:#5a2">&#39;0-Problem_send_more_info&#39;</span>,<span style="color:#5a2">&#39;1-Enjoy_Our_Savings&#39;</span>,<span style="color:#5a2">&#39;2-Issue_Shoutout&#39;</span>,<span style="color:#5a2">&#39;3-Wrong_Company&#39;</span>,<span style="color:#5a2">&#39;4-CustomerCare_Will_Help&#39;</span>,<span style="color:#5a2">&#39;5-Future&#39;</span>,
+             <span style="color:#5a2">&#39;6-Problem_Do_A_Claim&#39;</span>,<span style="color:#5a2">&#39;7-Apologies&#39;</span>,<span style="color:#5a2">&#39;8-Appreciation&#39;</span>,<span style="color:#5a2">&#39;9-Media_Queries&#39;</span>,<span style="color:#5a2">&#39;10-Store_Feedback&#39;</span>,
+             <span style="color:#5a2">&#39;11-Payments&#39;</span>,<span style="color:#5a2">&#39;12-Community&#39;</span>,<span style="color:#5a2">&#39;13-Problem_Followup_on_Claim&#39;</span>,<span style="color:#5a2">&#39;14-Problem_Direct_Message&#39;</span>
+            ]</code></pre></div>
+<h3 id="6-building-an-company-topic-matrix">6. Building an company-topic matrix</h3>
+
+<p>As a next step, I decided to aggregate the topics occuring in different tweets onto a company level to help the analysis. The goal was to arrive at a matrix that shows the strength of each topic for each company, a matrix that could be used as an input for clustering algorithms.</p>
+
+<p>As seen below, I also decided to scale the topic strenghts along all companies, to only account for the relative topic strengths and not be biased by the difference in the frequency of tweets between companies.</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">read_from_saved_model</span>(<span style="color:#000">saved_model</span>=<span style="color:#5a2">&#39;20181109-211034_lsi_300.sav&#39;</span>):
+    <span style="color:#000">df</span> = <span style="color:#000">pd</span>.<span style="color:#000">read_pickle</span>(<span style="color:#5a2">&#39;all_comp_twitter_df.pkl&#39;</span>)
+    <span style="color:#000">tweet_string</span> = <span style="color:#000">clean_tweet</span>(<span style="color:#000">df</span>)
+    <span style="color:#000">tweet_string_noid</span> = [<span style="color:#000">t</span> <span style="color:#00f">for</span> <span style="color:#000">_</span>,<span style="color:#000">t</span> <span style="color:#00f">in</span> <span style="color:#000">tweet_string</span>]
+
+    <span style="color:#000">tfidf_vectorizer</span> = <span style="color:#000">TfidfVectorizer</span>(<span style="color:#000">max_df</span>=<span style="color:#3af">0.3</span>, <span style="color:#000">min_df</span>=<span style="color:#3af">2</span>,
+                                           <span style="color:#000">stop_words</span>=<span style="color:#5a2">&#39;english&#39;</span>)
+
+    <span style="color:#000">tfidf</span> = <span style="color:#000">tfidf_vectorizer</span>.<span style="color:#000">fit_transform</span>(<span style="color:#000">tweet_string_noid</span>)
+    
+    <span style="color:#000">model</span> = <span style="color:#000">own_read_pickle</span>(<span style="color:#000">saved_model</span>)
+    <span style="color:#000">doc_topics</span> = <span style="color:#000">model</span>.<span style="color:#000">transform</span>(<span style="color:#000">tfidf</span>)
+    
+    <span style="color:#000">tweet_id_topic_vector</span> = <span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">list</span>(<span style="color:#000">zip</span>([<span style="color:#000">c</span> <span style="color:#00f">for</span> <span style="color:#000">c</span>,<span style="color:#000">_</span> <span style="color:#00f">in</span> <span style="color:#000">tweet_string</span>],<span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">doc_topics</span>),<span style="color:#000">np</span>.<span style="color:#000">argmax</span>(<span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">doc_topics</span>),<span style="color:#000">axis</span>=<span style="color:#3af">1</span>))), <span style="color:#000">columns</span>=[<span style="color:#5a2">&#39;Company&#39;</span>,<span style="color:#5a2">&#39;Tweet_Topics&#39;</span>,<span style="color:#5a2">&#39;Hard_Classification&#39;</span>])
+    <span style="color:#000">company_topic_matrix</span> = (<span style="color:#000">tweet_id_topic_vector</span>
+                            .<span style="color:#000">groupby</span>([<span style="color:#5a2">&#39;Company&#39;</span>])[<span style="color:#5a2">&#39;Tweet_Topics&#39;</span>]
+                            .<span style="color:#000">apply</span>(<span style="color:#00f">lambda</span> <span style="color:#000">x</span>: <span style="color:#000">np</span>.<span style="color:#000">mean</span>(<span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">x</span>),<span style="color:#000">axis</span>=<span style="color:#3af">0</span>))
+                            .<span style="color:#000">reset_index</span>()
+                           )
+    
+    <span style="color:#00f">return</span> <span style="color:#000">tweet_string</span>, <span style="color:#000">doc_topics</span>, <span style="color:#000">company_topic_matrix</span></code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Topic frequency</span>
+<span style="color:#888;font-style:italic">#unique, counts = np.unique(np.argmax(np.array(doc_topics),axis=1), return_counts=True)</span>
+<span style="color:#888;font-style:italic">#total = np.sum(counts)</span>
+<span style="color:#888;font-style:italic">#print(np.asarray((unique, counts/total*100)).T)</span>
+
+<span style="color:#888;font-style:italic"># Finding hard classification of each document</span>
+<span style="color:#888;font-style:italic">#print(list(zip(tweet_string[:1000],np.argmax(np.array(doc_topics),axis=1)[:1000])))</span>
+
+<span style="color:#888;font-style:italic"># Map topic vectors to doc ids</span>
+<span style="color:#000">tweet_id_topic_vector</span> = <span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">list</span>(<span style="color:#000">zip</span>([<span style="color:#000">c</span> <span style="color:#00f">for</span> <span style="color:#000">c</span>,<span style="color:#000">_</span> <span style="color:#00f">in</span> <span style="color:#000">tweet_string</span>],<span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">nmf_doc_topics</span>),<span style="color:#000">np</span>.<span style="color:#000">argmax</span>(<span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">nmf_doc_topics</span>),<span style="color:#000">axis</span>=<span style="color:#3af">1</span>))), <span style="color:#000">columns</span>=[<span style="color:#5a2">&#39;Company&#39;</span>,<span style="color:#5a2">&#39;Tweet_Topics&#39;</span>,<span style="color:#5a2">&#39;Hard_Classification&#39;</span>])
+<span style="color:#000">company_topic_matrix</span> = (<span style="color:#000">tweet_id_topic_vector</span>
+                        .<span style="color:#000">groupby</span>([<span style="color:#5a2">&#39;Company&#39;</span>])[<span style="color:#5a2">&#39;Tweet_Topics&#39;</span>]
+                        .<span style="color:#000">apply</span>(<span style="color:#00f">lambda</span> <span style="color:#000">x</span>: <span style="color:#000">np</span>.<span style="color:#000">mean</span>(<span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">x</span>),<span style="color:#000">axis</span>=<span style="color:#3af">0</span>))
+                        .<span style="color:#000">reset_index</span>()
+                       )</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> <span style="color:#000">sklearn.preprocessing</span> <span style="color:#00f">import</span> <span style="color:#000">MinMaxScaler</span>
+
+<span style="color:#000">x</span> = <span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">company_topic_matrix</span>.<span style="color:#000">Tweet_Topics</span>.<span style="color:#000">tolist</span>(),<span style="color:#000">columns</span>=<span style="color:#000">topic_names</span>).<span style="color:#000">values</span> <span style="color:#888;font-style:italic">#returns a numpy array</span>
+<span style="color:#000">min_max_scaler</span> = <span style="color:#000">MinMaxScaler</span>()
+<span style="color:#000">x_scaled</span> = <span style="color:#000">min_max_scaler</span>.<span style="color:#000">fit_transform</span>(<span style="color:#000">x</span>)
+<span style="color:#000">df</span> = <span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">x_scaled</span>,<span style="color:#000">columns</span>=<span style="color:#000">topic_names</span>)
+<span style="color:#000">pd</span>.<span style="color:#000">concat</span>([<span style="color:#000">company_topic_matrix</span>.<span style="color:#000">Company</span>,<span style="color:#000">df</span>],<span style="color:#000">axis</span>=<span style="color:#3af">1</span>)</code></pre></div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Company</th>
+      <th>0-Problem_send_more_info</th>
+      <th>1-Enjoy_Our_Savings</th>
+      <th>2-Issue_Shoutout</th>
+      <th>3-Wrong_Company</th>
+      <th>4-CustomerCare_Will_Help</th>
+      <th>5-Future</th>
+      <th>6-Problem_Do_A_Claim</th>
+      <th>7-Apologies</th>
+      <th>8-Appreciation</th>
+      <th>9-Media_Queries</th>
+      <th>10-Store_Feedback</th>
+      <th>11-Payments</th>
+      <th>12-Community</th>
+      <th>13-Problem_Followup_on_Claim</th>
+      <th>14-Problem_Direct_Message</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>3M</td>
+      <td>0.034730</td>
+      <td>0.000043</td>
+      <td>0.464079</td>
+      <td>0.000167</td>
+      <td>0.248632</td>
+      <td>0.150424</td>
+      <td>0.036577</td>
+      <td>0.072305</td>
+      <td>0.063670</td>
+      <td>0.061954</td>
+      <td>0.016071</td>
+      <td>0.115100</td>
+      <td>0.074772</td>
+      <td>0.134828</td>
+      <td>0.032306</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>ADP</td>
+      <td>0.015487</td>
+      <td>0.000052</td>
+      <td>0.364350</td>
+      <td>0.000933</td>
+      <td>0.263061</td>
+      <td>0.114763</td>
+      <td>0.094844</td>
+      <td>0.094964</td>
+      <td>0.047858</td>
+      <td>0.331313</td>
+      <td>0.069804</td>
+      <td>0.050448</td>
+      <td>0.042467</td>
+      <td>0.090025</td>
+      <td>0.114870</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>AEPnews</td>
+      <td>0.035371</td>
+      <td>0.000250</td>
+      <td>0.071127</td>
+      <td>0.000168</td>
+      <td>0.122005</td>
+      <td>0.167116</td>
+      <td>0.060664</td>
+      <td>0.033869</td>
+      <td>0.040343</td>
+      <td>0.030305</td>
+      <td>0.014532</td>
+      <td>0.070790</td>
+      <td>0.056905</td>
+      <td>0.056080</td>
+      <td>0.021495</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>AGCOcorp</td>
+      <td>0.006928</td>
+      <td>0.000022</td>
+      <td>0.063124</td>
+      <td>0.000369</td>
+      <td>0.009597</td>
+      <td>0.233227</td>
+      <td>0.005527</td>
+      <td>0.027306</td>
+      <td>0.103116</td>
+      <td>0.011657</td>
+      <td>0.011322</td>
+      <td>0.039615</td>
+      <td>0.073586</td>
+      <td>0.016584</td>
+      <td>0.044551</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>AIGinsurance</td>
+      <td>0.064825</td>
+      <td>0.000611</td>
+      <td>0.214923</td>
+      <td>0.000016</td>
+      <td>0.322280</td>
+      <td>0.216465</td>
+      <td>0.157697</td>
+      <td>0.100385</td>
+      <td>0.028968</td>
+      <td>0.296824</td>
+      <td>0.018872</td>
+      <td>0.017204</td>
+      <td>0.092874</td>
+      <td>0.030483</td>
+      <td>0.041253</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>AbbottNews</td>
+      <td>0.122051</td>
+      <td>0.000268</td>
+      <td>0.254548</td>
+      <td>0.000025</td>
+      <td>0.112146</td>
+      <td>0.296863</td>
+      <td>0.052436</td>
+      <td>0.050949</td>
+      <td>0.050680</td>
+      <td>0.047049</td>
+      <td>0.013927</td>
+      <td>0.033424</td>
+      <td>0.137242</td>
+      <td>0.014831</td>
+      <td>0.036166</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Adobe</td>
+      <td>0.007455</td>
+      <td>0.000165</td>
+      <td>0.264032</td>
+      <td>0.000024</td>
+      <td>0.137186</td>
+      <td>0.188199</td>
+      <td>0.016739</td>
+      <td>0.060765</td>
+      <td>0.174245</td>
+      <td>0.018895</td>
+      <td>0.024156</td>
+      <td>0.074479</td>
+      <td>0.061544</td>
+      <td>0.072796</td>
+      <td>0.020764</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>AdvanceAuto</td>
+      <td>0.092202</td>
+      <td>0.000272</td>
+      <td>0.096863</td>
+      <td>0.000467</td>
+      <td>0.087942</td>
+      <td>0.100394</td>
+      <td>0.167050</td>
+      <td>0.080391</td>
+      <td>0.140871</td>
+      <td>0.123044</td>
+      <td>0.352777</td>
+      <td>0.078622</td>
+      <td>0.035209</td>
+      <td>0.080244</td>
+      <td>0.136232</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Aetna</td>
+      <td>0.061270</td>
+      <td>0.000028</td>
+      <td>0.247387</td>
+      <td>0.000018</td>
+      <td>0.011557</td>
+      <td>0.094432</td>
+      <td>0.012756</td>
+      <td>0.012055</td>
+      <td>0.903271</td>
+      <td>0.047104</td>
+      <td>0.009019</td>
+      <td>0.070552</td>
+      <td>0.046654</td>
+      <td>0.005387</td>
+      <td>0.061844</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>AlaskaTLF</td>
+      <td>0.011573</td>
+      <td>0.000158</td>
+      <td>0.024923</td>
+      <td>0.000016</td>
+      <td>0.006407</td>
+      <td>0.108446</td>
+      <td>0.002674</td>
+      <td>0.009073</td>
+      <td>0.104261</td>
+      <td>0.002673</td>
+      <td>0.005072</td>
+      <td>0.032516</td>
+      <td>0.076975</td>
+      <td>0.001738</td>
+      <td>0.013465</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Albertsons</td>
+      <td>0.044415</td>
+      <td>0.000501</td>
+      <td>0.150666</td>
+      <td>0.000501</td>
+      <td>0.184988</td>
+      <td>0.061366</td>
+      <td>0.184585</td>
+      <td>0.095813</td>
+      <td>0.245741</td>
+      <td>0.118700</td>
+      <td>0.857427</td>
+      <td>0.068813</td>
+      <td>0.028199</td>
+      <td>0.039854</td>
+      <td>0.022095</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Alcoa</td>
+      <td>0.002546</td>
+      <td>0.000407</td>
+      <td>0.032436</td>
+      <td>0.001324</td>
+      <td>0.003771</td>
+      <td>0.202827</td>
+      <td>0.003821</td>
+      <td>0.013611</td>
+      <td>0.032853</td>
+      <td>0.006321</td>
+      <td>0.005976</td>
+      <td>0.016686</td>
+      <td>0.118723</td>
+      <td>0.012208</td>
+      <td>0.001861</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>Allstate</td>
+      <td>0.103750</td>
+      <td>0.000178</td>
+      <td>0.399555</td>
+      <td>0.000036</td>
+      <td>0.395812</td>
+      <td>0.086052</td>
+      <td>0.350872</td>
+      <td>0.057001</td>
+      <td>0.195536</td>
+      <td>0.082287</td>
+      <td>0.020869</td>
+      <td>0.101112</td>
+      <td>0.042726</td>
+      <td>0.035282</td>
+      <td>0.046444</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>Ally</td>
+      <td>0.038935</td>
+      <td>0.037916</td>
+      <td>0.368194</td>
+      <td>0.000008</td>
+      <td>0.083736</td>
+      <td>0.194061</td>
+      <td>0.076285</td>
+      <td>0.206082</td>
+      <td>0.712998</td>
+      <td>0.020973</td>
+      <td>0.037251</td>
+      <td>0.058795</td>
+      <td>0.076022</td>
+      <td>0.123282</td>
+      <td>0.026824</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>AltriaNews</td>
+      <td>0.010248</td>
+      <td>0.000000</td>
+      <td>0.146327</td>
+      <td>0.000916</td>
+      <td>0.019105</td>
+      <td>0.396501</td>
+      <td>0.012783</td>
+      <td>0.004292</td>
+      <td>0.008583</td>
+      <td>0.044001</td>
+      <td>0.011300</td>
+      <td>0.019572</td>
+      <td>0.208996</td>
+      <td>0.083028</td>
+      <td>0.010661</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>AmericanAir</td>
+      <td>0.106669</td>
+      <td>0.000690</td>
+      <td>0.352703</td>
+      <td>0.000226</td>
+      <td>0.336052</td>
+      <td>0.084408</td>
+      <td>0.104178</td>
+      <td>0.137420</td>
+      <td>0.282797</td>
+      <td>0.053355</td>
+      <td>0.068643</td>
+      <td>0.037193</td>
+      <td>0.031975</td>
+      <td>0.061286</td>
+      <td>0.021539</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>AmericanAxle</td>
+      <td>0.002096</td>
+      <td>0.000030</td>
+      <td>0.079330</td>
+      <td>0.000013</td>
+      <td>0.012205</td>
+      <td>0.262221</td>
+      <td>0.001637</td>
+      <td>0.026436</td>
+      <td>0.034792</td>
+      <td>0.004933</td>
+      <td>0.011169</td>
+      <td>0.026045</td>
+      <td>0.154281</td>
+      <td>0.013487</td>
+      <td>0.003396</td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>Amgen</td>
+      <td>0.005327</td>
+      <td>0.000022</td>
+      <td>0.131975</td>
+      <td>0.000903</td>
+      <td>0.011829</td>
+      <td>0.332265</td>
+      <td>0.007078</td>
+      <td>0.013094</td>
+      <td>0.037968</td>
+      <td>0.090332</td>
+      <td>0.008002</td>
+      <td>0.026548</td>
+      <td>0.119566</td>
+      <td>0.011619</td>
+      <td>0.015357</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>Anixter</td>
+      <td>0.001174</td>
+      <td>0.000687</td>
+      <td>0.068091</td>
+      <td>0.000019</td>
+      <td>0.004121</td>
+      <td>0.285571</td>
+      <td>0.005880</td>
+      <td>0.008671</td>
+      <td>0.027183</td>
+      <td>0.006636</td>
+      <td>0.010614</td>
+      <td>0.025184</td>
+      <td>0.064286</td>
+      <td>0.016602</td>
+      <td>0.008534</td>
+    </tr>
+    <tr>
+      <th>19</th>
+      <td>AnthemInc</td>
+      <td>0.037216</td>
+      <td>0.000471</td>
+      <td>0.913013</td>
+      <td>0.001423</td>
+      <td>0.185404</td>
+      <td>0.203106</td>
+      <td>0.057397</td>
+      <td>0.324302</td>
+      <td>0.030524</td>
+      <td>0.253599</td>
+      <td>0.012146</td>
+      <td>0.031706</td>
+      <td>0.109369</td>
+      <td>0.028787</td>
+      <td>0.063573</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>Applied4Tech</td>
+      <td>0.000976</td>
+      <td>0.000253</td>
+      <td>0.015681</td>
+      <td>0.000188</td>
+      <td>0.005679</td>
+      <td>0.185547</td>
+      <td>0.006352</td>
+      <td>0.013555</td>
+      <td>0.047403</td>
+      <td>0.010301</td>
+      <td>0.005657</td>
+      <td>0.025102</td>
+      <td>0.094053</td>
+      <td>0.034569</td>
+      <td>0.002206</td>
+    </tr>
+    <tr>
+      <th>21</th>
+      <td>Aramark</td>
+      <td>0.003319</td>
+      <td>0.000244</td>
+      <td>0.074704</td>
+      <td>0.000017</td>
+      <td>0.007458</td>
+      <td>0.166047</td>
+      <td>0.002283</td>
+      <td>0.012981</td>
+      <td>0.109840</td>
+      <td>0.037039</td>
+      <td>0.017308</td>
+      <td>0.084868</td>
+      <td>0.220439</td>
+      <td>0.032778</td>
+      <td>0.006462</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>ArrowGlobal</td>
+      <td>0.028517</td>
+      <td>0.000163</td>
+      <td>0.195536</td>
+      <td>0.000184</td>
+      <td>0.077676</td>
+      <td>0.207077</td>
+      <td>0.014678</td>
+      <td>0.039949</td>
+      <td>0.059998</td>
+      <td>0.011872</td>
+      <td>0.021784</td>
+      <td>0.056637</td>
+      <td>0.142650</td>
+      <td>0.022790</td>
+      <td>0.006442</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>Assurant</td>
+      <td>0.157642</td>
+      <td>0.000022</td>
+      <td>0.534427</td>
+      <td>0.000021</td>
+      <td>0.336380</td>
+      <td>0.059427</td>
+      <td>0.953929</td>
+      <td>0.255357</td>
+      <td>0.066545</td>
+      <td>0.373761</td>
+      <td>0.044416</td>
+      <td>0.084964</td>
+      <td>0.020570</td>
+      <td>0.057733</td>
+      <td>0.212936</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>AutoNation</td>
+      <td>0.080791</td>
+      <td>0.000136</td>
+      <td>0.012534</td>
+      <td>0.000009</td>
+      <td>0.841857</td>
+      <td>0.106287</td>
+      <td>0.026761</td>
+      <td>0.139896</td>
+      <td>0.191257</td>
+      <td>0.110680</td>
+      <td>0.014844</td>
+      <td>0.042588</td>
+      <td>0.083955</td>
+      <td>1.000000</td>
+      <td>0.070029</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>AutoOwnersIns</td>
+      <td>0.042813</td>
+      <td>0.000251</td>
+      <td>0.076412</td>
+      <td>0.002278</td>
+      <td>0.050347</td>
+      <td>0.102288</td>
+      <td>0.038454</td>
+      <td>0.043259</td>
+      <td>0.109077</td>
+      <td>0.074663</td>
+      <td>0.010748</td>
+      <td>0.119560</td>
+      <td>0.095126</td>
+      <td>0.015117</td>
+      <td>0.016785</td>
+    </tr>
+    <tr>
+      <th>26</th>
+      <td>Avnet</td>
+      <td>0.003336</td>
+      <td>0.000148</td>
+      <td>0.098060</td>
+      <td>0.000145</td>
+      <td>0.009349</td>
+      <td>0.248627</td>
+      <td>0.015906</td>
+      <td>0.012513</td>
+      <td>0.086474</td>
+      <td>0.007215</td>
+      <td>0.016167</td>
+      <td>0.030794</td>
+      <td>0.065136</td>
+      <td>0.016336</td>
+      <td>0.006208</td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>BBT</td>
+      <td>0.038733</td>
+      <td>0.001452</td>
+      <td>0.994990</td>
+      <td>0.000015</td>
+      <td>1.000000</td>
+      <td>0.068342</td>
+      <td>0.470395</td>
+      <td>0.043476</td>
+      <td>0.051547</td>
+      <td>0.095649</td>
+      <td>0.088673</td>
+      <td>0.073856</td>
+      <td>0.023971</td>
+      <td>0.027823</td>
+      <td>0.046540</td>
+    </tr>
+    <tr>
+      <th>28</th>
+      <td>BallCorpHQ</td>
+      <td>0.005995</td>
+      <td>0.000136</td>
+      <td>0.152781</td>
+      <td>0.000371</td>
+      <td>0.007407</td>
+      <td>0.187890</td>
+      <td>0.005158</td>
+      <td>0.027128</td>
+      <td>0.144411</td>
+      <td>0.020850</td>
+      <td>0.010541</td>
+      <td>0.054241</td>
+      <td>0.124032</td>
+      <td>0.009003</td>
+      <td>0.001754</td>
+    </tr>
+    <tr>
+      <th>29</th>
+      <td>BankofAmerica</td>
+      <td>0.003456</td>
+      <td>0.000540</td>
+      <td>0.106135</td>
+      <td>0.000033</td>
+      <td>0.007344</td>
+      <td>0.171525</td>
+      <td>0.008862</td>
+      <td>0.007942</td>
+      <td>0.300690</td>
+      <td>0.007330</td>
+      <td>0.009058</td>
+      <td>0.109907</td>
+      <td>0.151719</td>
+      <td>0.036991</td>
+      <td>0.015493</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>209</th>
+      <td>footlocker</td>
+      <td>0.037951</td>
+      <td>0.000044</td>
+      <td>0.115491</td>
+      <td>0.003519</td>
+      <td>0.053569</td>
+      <td>0.120345</td>
+      <td>0.417691</td>
+      <td>0.096239</td>
+      <td>0.035417</td>
+      <td>0.135099</td>
+      <td>0.164730</td>
+      <td>0.016953</td>
+      <td>0.009926</td>
+      <td>0.140309</td>
+      <td>0.057998</td>
+    </tr>
+    <tr>
+      <th>210</th>
+      <td>generalelectric</td>
+      <td>0.012942</td>
+      <td>0.000297</td>
+      <td>0.219326</td>
+      <td>0.000478</td>
+      <td>0.387439</td>
+      <td>0.140841</td>
+      <td>0.030929</td>
+      <td>0.361572</td>
+      <td>0.086499</td>
+      <td>0.100405</td>
+      <td>0.010143</td>
+      <td>0.052097</td>
+      <td>0.055112</td>
+      <td>0.028026</td>
+      <td>0.012143</td>
+    </tr>
+    <tr>
+      <th>211</th>
+      <td>goodyear</td>
+      <td>0.037288</td>
+      <td>0.001600</td>
+      <td>0.136101</td>
+      <td>0.000886</td>
+      <td>0.045733</td>
+      <td>0.094129</td>
+      <td>0.011502</td>
+      <td>0.036251</td>
+      <td>0.287180</td>
+      <td>0.172309</td>
+      <td>0.010364</td>
+      <td>0.086611</td>
+      <td>0.069572</td>
+      <td>0.020190</td>
+      <td>0.017845</td>
+    </tr>
+    <tr>
+      <th>212</th>
+      <td>grainger</td>
+      <td>0.022977</td>
+      <td>0.000731</td>
+      <td>0.175217</td>
+      <td>0.000644</td>
+      <td>0.035287</td>
+      <td>0.162917</td>
+      <td>0.017966</td>
+      <td>0.032224</td>
+      <td>0.243393</td>
+      <td>0.023741</td>
+      <td>0.034749</td>
+      <td>0.097382</td>
+      <td>0.164222</td>
+      <td>0.033425</td>
+      <td>0.013401</td>
+    </tr>
+    <tr>
+      <th>213</th>
+      <td>honeywell</td>
+      <td>0.189931</td>
+      <td>0.000830</td>
+      <td>0.498149</td>
+      <td>0.000026</td>
+      <td>0.036985</td>
+      <td>0.123902</td>
+      <td>0.038936</td>
+      <td>0.206498</td>
+      <td>0.070249</td>
+      <td>0.056695</td>
+      <td>0.025965</td>
+      <td>0.059303</td>
+      <td>0.069753</td>
+      <td>0.022489</td>
+      <td>0.018002</td>
+    </tr>
+    <tr>
+      <th>214</th>
+      <td>intel</td>
+      <td>0.100776</td>
+      <td>0.000240</td>
+      <td>0.137802</td>
+      <td>0.000028</td>
+      <td>0.065936</td>
+      <td>0.203053</td>
+      <td>0.027011</td>
+      <td>0.053587</td>
+      <td>0.157144</td>
+      <td>0.045011</td>
+      <td>0.009467</td>
+      <td>0.042896</td>
+      <td>0.052356</td>
+      <td>0.021108</td>
+      <td>0.130942</td>
+    </tr>
+    <tr>
+      <th>215</th>
+      <td>keybank</td>
+      <td>0.014197</td>
+      <td>0.003956</td>
+      <td>0.290020</td>
+      <td>0.000518</td>
+      <td>0.039773</td>
+      <td>0.169369</td>
+      <td>0.034075</td>
+      <td>0.269840</td>
+      <td>0.182332</td>
+      <td>0.011847</td>
+      <td>0.015414</td>
+      <td>0.088888</td>
+      <td>0.089758</td>
+      <td>0.015407</td>
+      <td>0.014771</td>
+    </tr>
+    <tr>
+      <th>216</th>
+      <td>kiewit</td>
+      <td>0.005998</td>
+      <td>0.000369</td>
+      <td>0.050419</td>
+      <td>0.000551</td>
+      <td>0.010579</td>
+      <td>0.255036</td>
+      <td>0.009042</td>
+      <td>0.015368</td>
+      <td>0.048118</td>
+      <td>0.010975</td>
+      <td>0.014533</td>
+      <td>0.047105</td>
+      <td>0.139315</td>
+      <td>0.016037</td>
+      <td>0.004445</td>
+    </tr>
+    <tr>
+      <th>217</th>
+      <td>kindredhealth</td>
+      <td>0.034239</td>
+      <td>0.000167</td>
+      <td>0.153424</td>
+      <td>0.000879</td>
+      <td>0.014417</td>
+      <td>0.158336</td>
+      <td>0.015457</td>
+      <td>0.010896</td>
+      <td>0.081287</td>
+      <td>0.028290</td>
+      <td>0.011320</td>
+      <td>0.030280</td>
+      <td>0.065153</td>
+      <td>0.015730</td>
+      <td>0.011006</td>
+    </tr>
+    <tr>
+      <th>218</th>
+      <td>kroger</td>
+      <td>0.036468</td>
+      <td>0.000210</td>
+      <td>0.063714</td>
+      <td>0.000321</td>
+      <td>0.510570</td>
+      <td>0.092823</td>
+      <td>0.319799</td>
+      <td>0.109182</td>
+      <td>0.443814</td>
+      <td>0.107375</td>
+      <td>0.643028</td>
+      <td>0.054998</td>
+      <td>0.033020</td>
+      <td>0.086458</td>
+      <td>0.039535</td>
+    </tr>
+    <tr>
+      <th>219</th>
+      <td>lincolnfingroup</td>
+      <td>0.015731</td>
+      <td>0.005065</td>
+      <td>0.416813</td>
+      <td>0.000018</td>
+      <td>0.027892</td>
+      <td>0.302539</td>
+      <td>0.034182</td>
+      <td>0.046932</td>
+      <td>0.175307</td>
+      <td>0.144284</td>
+      <td>0.010754</td>
+      <td>0.227967</td>
+      <td>0.149602</td>
+      <td>0.036672</td>
+      <td>0.214887</td>
+    </tr>
+    <tr>
+      <th>220</th>
+      <td>lithiamotors</td>
+      <td>0.004544</td>
+      <td>0.001019</td>
+      <td>0.098806</td>
+      <td>0.000918</td>
+      <td>0.063071</td>
+      <td>0.095119</td>
+      <td>0.007113</td>
+      <td>0.014869</td>
+      <td>0.092564</td>
+      <td>0.007970</td>
+      <td>0.024671</td>
+      <td>0.046992</td>
+      <td>0.066992</td>
+      <td>0.028309</td>
+      <td>0.011264</td>
+    </tr>
+    <tr>
+      <th>221</th>
+      <td>massmutual</td>
+      <td>0.022214</td>
+      <td>0.002255</td>
+      <td>0.167998</td>
+      <td>0.000024</td>
+      <td>0.070632</td>
+      <td>0.139392</td>
+      <td>0.015226</td>
+      <td>0.018853</td>
+      <td>0.140629</td>
+      <td>0.023325</td>
+      <td>0.020446</td>
+      <td>0.054366</td>
+      <td>0.144254</td>
+      <td>0.052314</td>
+      <td>0.056159</td>
+    </tr>
+    <tr>
+      <th>222</th>
+      <td>molinahealth</td>
+      <td>0.007150</td>
+      <td>0.000298</td>
+      <td>0.650811</td>
+      <td>0.000203</td>
+      <td>0.042635</td>
+      <td>0.172464</td>
+      <td>0.192404</td>
+      <td>0.076848</td>
+      <td>0.052640</td>
+      <td>0.072055</td>
+      <td>0.035220</td>
+      <td>0.029853</td>
+      <td>0.072911</td>
+      <td>0.032059</td>
+      <td>0.015776</td>
+    </tr>
+    <tr>
+      <th>223</th>
+      <td>mutualofomaha</td>
+      <td>0.012167</td>
+      <td>0.004237</td>
+      <td>0.203725</td>
+      <td>0.000211</td>
+      <td>0.035083</td>
+      <td>0.191994</td>
+      <td>0.101642</td>
+      <td>0.024348</td>
+      <td>0.070012</td>
+      <td>0.041755</td>
+      <td>0.015430</td>
+      <td>0.081759</td>
+      <td>0.073155</td>
+      <td>0.065381</td>
+      <td>0.067428</td>
+    </tr>
+    <tr>
+      <th>224</th>
+      <td>newell_brands</td>
+      <td>0.015429</td>
+      <td>0.000286</td>
+      <td>0.043421</td>
+      <td>0.000116</td>
+      <td>0.007215</td>
+      <td>0.164829</td>
+      <td>0.007403</td>
+      <td>0.037634</td>
+      <td>0.147671</td>
+      <td>0.023393</td>
+      <td>0.009643</td>
+      <td>0.029198</td>
+      <td>0.095668</td>
+      <td>0.016699</td>
+      <td>0.009045</td>
+    </tr>
+    <tr>
+      <th>225</th>
+      <td>nvidia</td>
+      <td>0.002293</td>
+      <td>0.000650</td>
+      <td>0.069053</td>
+      <td>0.000560</td>
+      <td>0.006207</td>
+      <td>0.226694</td>
+      <td>0.007168</td>
+      <td>0.018323</td>
+      <td>0.058729</td>
+      <td>0.006762</td>
+      <td>0.008880</td>
+      <td>0.022231</td>
+      <td>0.064495</td>
+      <td>0.013718</td>
+      <td>0.001864</td>
+    </tr>
+    <tr>
+      <th>226</th>
+      <td>oct</td>
+      <td>0.002370</td>
+      <td>0.000013</td>
+      <td>0.011074</td>
+      <td>0.000167</td>
+      <td>0.006674</td>
+      <td>0.039543</td>
+      <td>0.003981</td>
+      <td>0.000048</td>
+      <td>0.061390</td>
+      <td>0.006157</td>
+      <td>0.000643</td>
+      <td>0.007940</td>
+      <td>0.004988</td>
+      <td>0.001210</td>
+      <td>0.005685</td>
+    </tr>
+    <tr>
+      <th>227</th>
+      <td>officedepot</td>
+      <td>0.220997</td>
+      <td>0.000303</td>
+      <td>0.458024</td>
+      <td>0.001519</td>
+      <td>0.501528</td>
+      <td>0.079970</td>
+      <td>0.315825</td>
+      <td>0.303227</td>
+      <td>0.254211</td>
+      <td>0.328164</td>
+      <td>0.244791</td>
+      <td>0.052783</td>
+      <td>0.024195</td>
+      <td>0.126524</td>
+      <td>0.938935</td>
+    </tr>
+    <tr>
+      <th>228</th>
+      <td>oreillyauto</td>
+      <td>0.032148</td>
+      <td>0.000593</td>
+      <td>0.141966</td>
+      <td>0.000231</td>
+      <td>0.126688</td>
+      <td>0.103407</td>
+      <td>0.031779</td>
+      <td>0.043063</td>
+      <td>0.220532</td>
+      <td>0.016763</td>
+      <td>0.097403</td>
+      <td>0.124701</td>
+      <td>0.037582</td>
+      <td>0.038522</td>
+      <td>0.012562</td>
+    </tr>
+    <tr>
+      <th>229</th>
+      <td>packagingcorp</td>
+      <td>0.007194</td>
+      <td>0.000118</td>
+      <td>0.104909</td>
+      <td>0.000400</td>
+      <td>0.018501</td>
+      <td>0.203967</td>
+      <td>0.006643</td>
+      <td>0.009751</td>
+      <td>0.117328</td>
+      <td>0.018239</td>
+      <td>0.017302</td>
+      <td>0.046779</td>
+      <td>0.133417</td>
+      <td>0.040060</td>
+      <td>0.013083</td>
+    </tr>
+    <tr>
+      <th>230</th>
+      <td>principal</td>
+      <td>0.080061</td>
+      <td>0.002573</td>
+      <td>0.404502</td>
+      <td>0.000019</td>
+      <td>0.114337</td>
+      <td>0.272841</td>
+      <td>0.026580</td>
+      <td>0.028010</td>
+      <td>0.045362</td>
+      <td>0.083656</td>
+      <td>0.020294</td>
+      <td>0.049960</td>
+      <td>0.074011</td>
+      <td>0.047246</td>
+      <td>0.053421</td>
+    </tr>
+    <tr>
+      <th>231</th>
+      <td>riteaid</td>
+      <td>0.080265</td>
+      <td>0.000032</td>
+      <td>0.049477</td>
+      <td>0.000325</td>
+      <td>0.555777</td>
+      <td>0.030220</td>
+      <td>0.952857</td>
+      <td>0.236521</td>
+      <td>0.118399</td>
+      <td>0.135890</td>
+      <td>1.000000</td>
+      <td>0.036028</td>
+      <td>0.017186</td>
+      <td>0.066228</td>
+      <td>0.024704</td>
+    </tr>
+    <tr>
+      <th>232</th>
+      <td>salesforce</td>
+      <td>0.008713</td>
+      <td>0.001446</td>
+      <td>0.110117</td>
+      <td>0.000352</td>
+      <td>0.018383</td>
+      <td>0.230777</td>
+      <td>0.013190</td>
+      <td>0.030277</td>
+      <td>0.086767</td>
+      <td>0.009090</td>
+      <td>0.014366</td>
+      <td>0.065355</td>
+      <td>0.076044</td>
+      <td>0.051446</td>
+      <td>0.013232</td>
+    </tr>
+    <tr>
+      <th>233</th>
+      <td>synchrony</td>
+      <td>0.002716</td>
+      <td>0.001037</td>
+      <td>0.167024</td>
+      <td>0.000335</td>
+      <td>0.045767</td>
+      <td>0.174442</td>
+      <td>0.084552</td>
+      <td>0.011289</td>
+      <td>0.470625</td>
+      <td>0.023321</td>
+      <td>0.021049</td>
+      <td>0.047571</td>
+      <td>0.115604</td>
+      <td>0.067251</td>
+      <td>0.062962</td>
+    </tr>
+    <tr>
+      <th>234</th>
+      <td>thermofisher</td>
+      <td>0.011261</td>
+      <td>0.000253</td>
+      <td>0.141254</td>
+      <td>0.000424</td>
+      <td>0.059888</td>
+      <td>0.243659</td>
+      <td>0.017899</td>
+      <td>0.020651</td>
+      <td>0.041513</td>
+      <td>0.024564</td>
+      <td>0.012138</td>
+      <td>0.017282</td>
+      <td>0.034072</td>
+      <td>0.023524</td>
+      <td>0.016489</td>
+    </tr>
+    <tr>
+      <th>235</th>
+      <td>unumnews</td>
+      <td>0.012313</td>
+      <td>0.002722</td>
+      <td>0.284123</td>
+      <td>0.000043</td>
+      <td>0.030648</td>
+      <td>0.222351</td>
+      <td>0.006941</td>
+      <td>0.013671</td>
+      <td>0.042733</td>
+      <td>0.026576</td>
+      <td>0.007388</td>
+      <td>0.126416</td>
+      <td>0.096412</td>
+      <td>0.036977</td>
+      <td>0.008295</td>
+    </tr>
+    <tr>
+      <th>236</th>
+      <td>usbank</td>
+      <td>0.058540</td>
+      <td>0.001500</td>
+      <td>0.163517</td>
+      <td>0.000158</td>
+      <td>0.074454</td>
+      <td>0.257047</td>
+      <td>0.047392</td>
+      <td>0.057297</td>
+      <td>0.259309</td>
+      <td>0.037074</td>
+      <td>0.013353</td>
+      <td>0.074398</td>
+      <td>0.053497</td>
+      <td>0.033400</td>
+      <td>0.039055</td>
+    </tr>
+    <tr>
+      <th>237</th>
+      <td>westerndigital</td>
+      <td>0.005294</td>
+      <td>0.000455</td>
+      <td>0.193950</td>
+      <td>0.000966</td>
+      <td>0.030310</td>
+      <td>0.302378</td>
+      <td>0.035559</td>
+      <td>0.025695</td>
+      <td>0.086208</td>
+      <td>0.080958</td>
+      <td>0.020096</td>
+      <td>0.031180</td>
+      <td>0.121263</td>
+      <td>0.080112</td>
+      <td>0.008704</td>
+    </tr>
+    <tr>
+      <th>238</th>
+      <td>zimmerbiomet</td>
+      <td>0.012415</td>
+      <td>0.000327</td>
+      <td>0.155417</td>
+      <td>0.004774</td>
+      <td>0.006357</td>
+      <td>0.380468</td>
+      <td>0.005207</td>
+      <td>0.007465</td>
+      <td>0.064318</td>
+      <td>0.007266</td>
+      <td>0.004652</td>
+      <td>0.054892</td>
+      <td>0.012694</td>
+      <td>0.006463</td>
+      <td>0.012725</td>
+    </tr>
+  </tbody>
+</table>
+<p>239 rows × 16 columns</p>
+</div>
+
+<h3 id="7-clustering-companies-based-on-the-company-topic-matrix">7. Clustering companies based on the company-topic matrix</h3>
+
+<p>Using hierarchical clustering to find meaningful groups among companies. Clusters are formed using multi-step, multi-threshold mechanism, which enables uncovering both nuanced and clearly apparent relationships.</p>
+
+<p>To understand the results of hierarchical clusters, one has to understand the usage of dendograms (i.e. the charts below). Starting from the left, each vertical line identifies an additional cluster as we move to the right. Depending on the chosen threshold (i.e. the horizontal line) more-and-more clusters will be formed, however the number of companies&rsquo; that belong to these clusters will be smaller-and-smaller - and typically, with more clusters becoming very unevenly distributed. In the table below the charts I summarize the cluster densities for the chosen threshold.</p>
+
+<p>Given that in my specific case, some clusters were demonstrating (much) stronger connections than other, I decided to use a &lsquo;double-dip&rsquo; (my own-words&hellip;) clustering mechanism, where some selected clusters after the initial hierarchical threshold are then distributed further using a second hierarchical threshold. In my case I applied additional clustering on cluster 1 and 2 to &lsquo;explode&rsquo; further.</p>
+
+<p>In the last function in this section, I am using this &lsquo;double-dip&rsquo; methodology to create the &lsquo;final&rsquo; clusters for my companies.</p>
+
+<p><img src="/Post_images/20181210_Fletcher/Slide_images/Slide04.png" alt="png" /></p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> <span style="color:#000">scipy.cluster.hierarchy</span> <span style="color:#00f">import</span> <span style="color:#000">dendrogram</span>, <span style="color:#000">linkage</span>
+
+<span style="color:#00f">def</span> <span style="color:#000">fancy_dendrogram</span>(*<span style="color:#000">args</span>, **<span style="color:#000">kwargs</span>):
+    <span style="color:#000">max_d</span> = <span style="color:#000">kwargs</span>.<span style="color:#000">pop</span>(<span style="color:#5a2">&#39;max_d&#39;</span>, <span style="color:#000">None</span>)
+    <span style="color:#00f">if</span> <span style="color:#000">max_d</span> <span style="color:#00f">and</span> <span style="color:#5a2">&#39;color_threshold&#39;</span> <span style="color:#00f">not</span> <span style="color:#00f">in</span> <span style="color:#000">kwargs</span>:
+        <span style="color:#000">kwargs</span>[<span style="color:#5a2">&#39;color_threshold&#39;</span>] = <span style="color:#000">max_d</span>
+    <span style="color:#000">annotate_above</span> = <span style="color:#000">kwargs</span>.<span style="color:#000">pop</span>(<span style="color:#5a2">&#39;annotate_above&#39;</span>, <span style="color:#3af">0</span>)
+
+    <span style="color:#000">ddata</span> = <span style="color:#000">dendrogram</span>(*<span style="color:#000">args</span>, **<span style="color:#000">kwargs</span>)
+
+    <span style="color:#00f">if</span> <span style="color:#00f">not</span> <span style="color:#000">kwargs</span>.<span style="color:#000">get</span>(<span style="color:#5a2">&#39;no_plot&#39;</span>, <span style="color:#000">False</span>):
+        <span style="color:#000">plt</span>.<span style="color:#000">title</span>(<span style="color:#5a2">&#39;Hierarchical Clustering Dendrogram (truncated)&#39;</span>)
+        <span style="color:#000">plt</span>.<span style="color:#000">xlabel</span>(<span style="color:#5a2">&#39;sample index or (cluster size)&#39;</span>)
+        <span style="color:#000">plt</span>.<span style="color:#000">ylabel</span>(<span style="color:#5a2">&#39;distance&#39;</span>)
+        <span style="color:#00f">for</span> <span style="color:#000">i</span>, <span style="color:#000">d</span>, <span style="color:#000">c</span> <span style="color:#00f">in</span> <span style="color:#000">zip</span>(<span style="color:#000">ddata</span>[<span style="color:#5a2">&#39;icoord&#39;</span>], <span style="color:#000">ddata</span>[<span style="color:#5a2">&#39;dcoord&#39;</span>], <span style="color:#000">ddata</span>[<span style="color:#5a2">&#39;color_list&#39;</span>]):
+            <span style="color:#000">x</span> = <span style="color:#3af">0.5</span> * <span style="color:#000">sum</span>(<span style="color:#000">i</span>[<span style="color:#3af">1</span>:<span style="color:#3af">3</span>])
+            <span style="color:#000">y</span> = <span style="color:#000">d</span>[<span style="color:#3af">1</span>]
+            <span style="color:#00f">if</span> <span style="color:#000">y</span> &gt; <span style="color:#000">annotate_above</span>:
+                <span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">x</span>, <span style="color:#000">y</span>, <span style="color:#5a2">&#39;o&#39;</span>, <span style="color:#000">c</span>=<span style="color:#000">c</span>)
+                <span style="color:#000">plt</span>.<span style="color:#000">annotate</span>(<span style="color:#5a2">&#34;</span><span style="color:#5a2">%.3g</span><span style="color:#5a2">&#34;</span> % <span style="color:#000">y</span>, (<span style="color:#000">x</span>, <span style="color:#000">y</span>), <span style="color:#000">xytext</span>=(<span style="color:#3af">0</span>, -<span style="color:#3af">5</span>),
+                             <span style="color:#000">textcoords</span>=<span style="color:#5a2">&#39;offset points&#39;</span>,
+                             <span style="color:#000">va</span>=<span style="color:#5a2">&#39;top&#39;</span>, <span style="color:#000">ha</span>=<span style="color:#5a2">&#39;center&#39;</span>)
+        <span style="color:#00f">if</span> <span style="color:#000">max_d</span>:
+            <span style="color:#000">plt</span>.<span style="color:#000">axhline</span>(<span style="color:#000">y</span>=<span style="color:#000">max_d</span>, <span style="color:#000">c</span>=<span style="color:#5a2">&#39;k&#39;</span>)
+    <span style="color:#00f">return</span> <span style="color:#000">ddata</span></code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">plot_hierarchical_cluster</span>(<span style="color:#000">company_topic_matrix</span>,<span style="color:#000">max_d</span>):
+    <span style="color:#000">data</span>=<span style="color:#000">np</span>.<span style="color:#000">matrix</span>(<span style="color:#000">company_topic_matrix</span>.<span style="color:#000">Tweet_Topics</span>.<span style="color:#000">tolist</span>())
+    <span style="color:#000">Z</span> = <span style="color:#000">linkage</span>(<span style="color:#000">data</span>, <span style="color:#5a2">&#39;ward&#39;</span>)
+
+    <span style="color:#000">fancy_dendrogram</span>(
+        <span style="color:#000">Z</span>,
+        <span style="color:#000">truncate_mode</span>=<span style="color:#5a2">&#39;lastp&#39;</span>,
+        <span style="color:#000">p</span>=<span style="color:#3af">30</span>,
+        <span style="color:#000">leaf_rotation</span>=<span style="color:#3af">90.</span>,
+        <span style="color:#000">leaf_font_size</span>=<span style="color:#3af">12.</span>,
+        <span style="color:#000">show_contracted</span>=<span style="color:#000">True</span>,
+        <span style="color:#000">annotate_above</span>=<span style="color:#3af">10</span>,
+        <span style="color:#000">max_d</span>=<span style="color:#000">max_d</span>,
+    )
+    <span style="color:#000">plt</span>.<span style="color:#000">show</span>()</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">hierarchy_freq_table</span>(<span style="color:#000">clusters</span>):
+    <span style="color:#000">df_c</span> = <span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">clusters</span>,<span style="color:#000">columns</span>=[<span style="color:#5a2">&#39;Cluster&#39;</span>]).<span style="color:#000">Cluster</span>
+    <span style="color:#000">df_c</span> = <span style="color:#000">df_c</span>.<span style="color:#000">value_counts</span>().<span style="color:#000">sort_index</span>().<span style="color:#000">reset_index</span>().<span style="color:#000">merge</span>(<span style="color:#000">df_c</span>.<span style="color:#000">value_counts</span>(<span style="color:#000">normalize</span>=<span style="color:#000">True</span>).<span style="color:#000">mul</span>(<span style="color:#3af">100</span>).<span style="color:#000">round</span>(<span style="color:#3af">1</span>).<span style="color:#000">reset_index</span>(),<span style="color:#000">on</span>=<span style="color:#5a2">&#39;index&#39;</span>)
+    <span style="color:#000">df_c</span>.<span style="color:#000">columns</span>=[<span style="color:#5a2">&#39;clusters&#39;</span>,<span style="color:#5a2">&#39;#_comp&#39;</span>,<span style="color:#5a2">&#39;%_comp&#39;</span>]
+    <span style="color:#00f">return</span> <span style="color:#000">df_c</span></code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">max_d</span> = <span style="color:#3af">0.1</span>
+<span style="color:#000">plt</span>.<span style="color:#000">rcParams</span>[<span style="color:#5a2">&#39;figure.figsize&#39;</span>] = [<span style="color:#3af">7</span>, <span style="color:#3af">5</span>]
+<span style="color:#000">plot_hierarchical_cluster</span>(<span style="color:#000">company_topic_matrix</span>,<span style="color:#000">max_d</span>)
+<span style="color:#000">main_clusters</span> = <span style="color:#000">hierarchical_cluster</span>(<span style="color:#000">company_topic_matrix</span>,<span style="color:#000">max_d</span>)
+<span style="color:#000">hierarchy_freq_table</span>(<span style="color:#000">main_clusters</span>)</code></pre></div>
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_25_0.png" alt="png" /></p>
+
+<pre><code>Found 4 clusters
+</code></pre>
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>clusters</th>
+      <th>#_comp</th>
+      <th>%_comp</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>188</td>
+      <td>78.7</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>49</td>
+      <td>20.5</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>1</td>
+      <td>0.4</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>4</td>
+      <td>1</td>
+      <td>0.4</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">max_d</span> = <span style="color:#3af">0.0185</span>
+<span style="color:#000">c</span> = <span style="color:#3af">1</span>
+
+<span style="color:#000">df_dive</span> = <span style="color:#000">cluster_dip</span>(<span style="color:#000">company_topic_matrix</span>, <span style="color:#000">main_clusters</span>, <span style="color:#000">c</span>)
+<span style="color:#000">plot_hierarchical_cluster</span>(<span style="color:#000">df_dive</span>,<span style="color:#000">max_d</span>)
+<span style="color:#000">hierarchy_freq_table</span>(<span style="color:#000">hierarchical_cluster</span>(<span style="color:#000">df_dive</span>,<span style="color:#000">max_d</span>))</code></pre></div>
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_26_0.png" alt="png" /></p>
+
+<pre><code>Found 8 clusters
+</code></pre>
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>clusters</th>
+      <th>#_comp</th>
+      <th>%_comp</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>4</td>
+      <td>2.1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>12</td>
+      <td>6.4</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>25</td>
+      <td>13.3</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>4</td>
+      <td>1</td>
+      <td>0.5</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>5</td>
+      <td>2</td>
+      <td>1.1</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>6</td>
+      <td>77</td>
+      <td>41.0</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>7</td>
+      <td>66</td>
+      <td>35.1</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>8</td>
+      <td>1</td>
+      <td>0.5</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">max_d</span> = <span style="color:#3af">0.035</span>
+<span style="color:#000">c</span> = <span style="color:#3af">2</span>
+
+<span style="color:#000">df_dive</span> = <span style="color:#000">cluster_dip</span>(<span style="color:#000">company_topic_matrix</span>, <span style="color:#000">main_clusters</span>, <span style="color:#000">c</span>)
+<span style="color:#000">plot_hierarchical_cluster</span>(<span style="color:#000">df_dive</span>,<span style="color:#000">max_d</span>)
+<span style="color:#000">hierarchy_freq_table</span>(<span style="color:#000">hierarchical_cluster</span>(<span style="color:#000">df_dive</span>,<span style="color:#000">max_d</span>))</code></pre></div>
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_27_0.png" alt="png" /></p>
+
+<pre><code>Found 7 clusters
+</code></pre>
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>clusters</th>
+      <th>#_comp</th>
+      <th>%_comp</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>5</td>
+      <td>10.2</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>1</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>3</td>
+      <td>6.1</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>4</td>
+      <td>2</td>
+      <td>4.1</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>5</td>
+      <td>3</td>
+      <td>6.1</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>6</td>
+      <td>12</td>
+      <td>24.5</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>7</td>
+      <td>23</td>
+      <td>46.9</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">cluster_dip</span>(<span style="color:#000">company_topic_matrix</span>, <span style="color:#000">clusters</span>, <span style="color:#000">cluster_num</span>):
+    <span style="color:#000">company_topic_cluster</span> = <span style="color:#000">pd</span>.<span style="color:#000">concat</span>([<span style="color:#000">company_topic_matrix</span>,<span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">clusters</span>,<span style="color:#000">columns</span>=[<span style="color:#5a2">&#39;Cluster&#39;</span>])],<span style="color:#000">axis</span>=<span style="color:#3af">1</span>)
+    <span style="color:#000">company_topic_cluster</span> = <span style="color:#000">company_topic_cluster</span>[<span style="color:#000">company_topic_cluster</span>.<span style="color:#000">Cluster</span>==<span style="color:#000">cluster_num</span>].<span style="color:#000">drop</span>([<span style="color:#5a2">&#39;Cluster&#39;</span>],<span style="color:#000">axis</span>=<span style="color:#3af">1</span>)
+    <span style="color:#00f">return</span> <span style="color:#000">company_topic_cluster</span>
+
+<span style="color:#00f">def</span> <span style="color:#000">hierarchical_cluster</span>(<span style="color:#000">company_topic_matrix</span>,<span style="color:#000">max_d</span>):
+    <span style="color:#00f">from</span> <span style="color:#000">scipy.cluster.hierarchy</span> <span style="color:#00f">import</span> <span style="color:#000">fcluster</span>
+
+    <span style="color:#000">data</span>=<span style="color:#000">np</span>.<span style="color:#000">matrix</span>(<span style="color:#000">company_topic_matrix</span>.<span style="color:#000">Tweet_Topics</span>.<span style="color:#000">tolist</span>())
+    <span style="color:#000">Z</span> = <span style="color:#000">linkage</span>(<span style="color:#000">data</span>, <span style="color:#5a2">&#39;ward&#39;</span>)
+
+    <span style="color:#000">clusters</span> = <span style="color:#000">fcluster</span>(<span style="color:#000">Z</span>, <span style="color:#000">max_d</span>, <span style="color:#000">criterion</span>=<span style="color:#5a2">&#39;distance&#39;</span>)
+    <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Found {np.unique(clusters).shape[0]} clusters&#39;</span>)
+
+    <span style="color:#00f">return</span> <span style="color:#000">clusters</span>
+
+<span style="color:#00f">def</span> <span style="color:#000">cluster_deep_dive</span>(<span style="color:#000">array_doc_topics</span>, <span style="color:#000">array_companies</span>, <span style="color:#000">array_clusters</span>, <span style="color:#000">list_topic_names</span>, <span style="color:#000">list_dive_into_clusters</span>=<span style="color:#000">None</span>, <span style="color:#000">list_dive_into_maxd</span>=<span style="color:#000">None</span>, <span style="color:#000">bool_rescale</span>=<span style="color:#000">True</span>):
+    
+    <span style="color:#888;font-style:italic"># Create dataframe from companies and topic model output &#39;topics&#39;</span>
+    <span style="color:#888;font-style:italic"># Then groupby company and average topic vectors into 1 list per company</span>
+    <span style="color:#000">list_company_topic_matrix</span> = (<span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">list</span>(<span style="color:#000">zip</span>(<span style="color:#000">array_companies</span>,
+                                                       <span style="color:#000">array_doc_topics</span>)),
+                                              <span style="color:#000">columns</span>=[<span style="color:#5a2">&#39;Company&#39;</span>,<span style="color:#5a2">&#39;Tweet_Topics&#39;</span>])
+                            .<span style="color:#000">groupby</span>([<span style="color:#5a2">&#39;Company&#39;</span>])[<span style="color:#5a2">&#39;Tweet_Topics&#39;</span>]
+                            .<span style="color:#000">apply</span>(<span style="color:#00f">lambda</span> <span style="color:#000">x</span>: <span style="color:#000">np</span>.<span style="color:#000">mean</span>(<span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">x</span>),<span style="color:#000">axis</span>=<span style="color:#3af">0</span>))
+                            .<span style="color:#000">reset_index</span>()
+                           )
+
+    <span style="color:#888;font-style:italic"># Explode the 1 list per company into a matrix style dataframe</span>
+    <span style="color:#000">array_topic_matrix</span> = <span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">list_company_topic_matrix</span>.<span style="color:#000">Tweet_Topics</span>.<span style="color:#000">tolist</span>()).<span style="color:#000">values</span>
+    
+    <span style="color:#888;font-style:italic"># If bool_rescale is True, rescale vectors (0,1)</span>
+    <span style="color:#00f">if</span> <span style="color:#000">bool_rescale</span>:
+        <span style="color:#000">min_max_scaler</span> = <span style="color:#000">MinMaxScaler</span>()
+        <span style="color:#000">array_topic_matrix</span> = <span style="color:#000">min_max_scaler</span>.<span style="color:#000">fit_transform</span>(<span style="color:#000">array_topic_matrix</span>)
+    
+    <span style="color:#888;font-style:italic"># Create company-topics-cluster dataframe with named topics</span>
+    <span style="color:#000">df_company_topic_cluster</span> = <span style="color:#000">pd</span>.<span style="color:#000">concat</span>([<span style="color:#000">list_company_topic_matrix</span>.<span style="color:#000">Company</span>,
+                    <span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">array_topic_matrix</span>,<span style="color:#000">columns</span>=<span style="color:#000">topic_names</span>),
+                    <span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">array_clusters</span>,<span style="color:#000">columns</span>=[<span style="color:#5a2">&#39;Cluster&#39;</span>])
+                   ],<span style="color:#000">axis</span>=<span style="color:#3af">1</span>)
+    <span style="color:#888;font-style:italic">#df_company_topic_cluster[&#39;Orig_Clusters&#39;] = df_company_topic_cluster[&#39;Cluster&#39;]</span>
+    
+    <span style="color:#888;font-style:italic"># Re-cluster selected clusters</span>
+    <span style="color:#00f">if</span> <span style="color:#000">list_dive_into_clusters</span> <span style="color:#00f">is</span> <span style="color:#00f">not</span> <span style="color:#000">None</span>:
+        
+        <span style="color:#888;font-style:italic"># Loop through each cluster to be broken up</span>
+        <span style="color:#00f">for</span> <span style="color:#000">i</span>, <span style="color:#000">cluster_num</span> <span style="color:#00f">in</span> <span style="color:#000">enumerate</span>(<span style="color:#000">list_dive_into_clusters</span>):
+            
+            <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;*&#39;</span>*<span style="color:#3af">50</span>)
+            <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Working on passed cluster_id {cluster_num}&#39;</span>)
+            
+            <span style="color:#888;font-style:italic"># Extract max_d</span>
+            <span style="color:#000">max_d</span> = <span style="color:#000">list_dive_into_maxd</span>[<span style="color:#000">i</span>]
+            
+            <span style="color:#888;font-style:italic"># Take data for deep-dive cluster and re-cluster</span>
+            <span style="color:#000">df_deepdive_company_topics_cluster</span> = <span style="color:#000">cluster_dip</span>(<span style="color:#000">list_company_topic_matrix</span>, <span style="color:#000">array_clusters</span>, <span style="color:#000">cluster_num</span>)
+            <span style="color:#000">array_deep_dive_clusters</span> = <span style="color:#000">hierarchical_cluster</span>(<span style="color:#000">df_deepdive_company_topics_cluster</span>,<span style="color:#000">max_d</span>)
+            <span style="color:#000">df_deepdivecompany_newtopic</span> = <span style="color:#000">pd</span>.<span style="color:#000">concat</span>([<span style="color:#000">df_deepdive_company_topics_cluster</span>.<span style="color:#000">reset_index</span>(),
+                                                     <span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">array_deep_dive_clusters</span>,
+                                                                  <span style="color:#000">columns</span>=[<span style="color:#5a2">&#39;Cluster&#39;</span>])],<span style="color:#000">axis</span>=<span style="color:#3af">1</span>)
+            
+            <span style="color:#888;font-style:italic"># Append new cluster to original</span>
+            <span style="color:#000">df_company_topic_cluster</span> = (<span style="color:#000">df_company_topic_cluster</span>
+                                         .<span style="color:#000">merge</span>(<span style="color:#000">df_deepdivecompany_newtopic</span>, <span style="color:#000">how</span>=<span style="color:#5a2">&#39;left&#39;</span>,<span style="color:#000">left_index</span>=<span style="color:#000">True</span>,<span style="color:#000">right_on</span>=<span style="color:#5a2">&#39;index&#39;</span>)
+                                         .<span style="color:#000">drop</span>([<span style="color:#5a2">&#39;index&#39;</span>,<span style="color:#5a2">&#39;Company_y&#39;</span>,<span style="color:#5a2">&#39;Tweet_Topics&#39;</span>],<span style="color:#000">axis</span>=<span style="color:#3af">1</span>)
+                                        )
+            <span style="color:#888;font-style:italic"># Rename weird merge names</span>
+            <span style="color:#000">df_company_topic_cluster</span>.<span style="color:#000">rename</span>({<span style="color:#5a2">&#39;Company_x&#39;</span>: <span style="color:#5a2">&#39;Company&#39;</span>, 
+                        <span style="color:#5a2">&#39;Cluster_x&#39;</span>: <span style="color:#5a2">&#39;Cluster_Main&#39;</span>, 
+                        <span style="color:#5a2">&#39;Cluster_y&#39;</span>: <span style="color:#5a2">&#39;Cluster_deepdive&#39;</span>}, 
+                       <span style="color:#000">axis</span> = <span style="color:#3af">1</span>, <span style="color:#000">inplace</span>=<span style="color:#000">True</span>)
+            
+            <span style="color:#888;font-style:italic"># Create temporary merged clusters</span>
+            <span style="color:#000">df_company_topic_cluster</span>[<span style="color:#5a2">&#39;Cluster_Main&#39;</span>] = <span style="color:#000">np</span>.<span style="color:#000">where</span>(
+                <span style="color:#000">np</span>.<span style="color:#000">isnan</span>(<span style="color:#000">df_company_topic_cluster</span>[<span style="color:#5a2">&#39;Cluster_deepdive&#39;</span>])==<span style="color:#000">False</span>, 
+                <span style="color:#000">df_company_topic_cluster</span>[<span style="color:#5a2">&#39;Cluster_Main&#39;</span>].<span style="color:#000">astype</span>(<span style="color:#000">str</span>)+<span style="color:#000">df_company_topic_cluster</span>[<span style="color:#5a2">&#39;Cluster_deepdive&#39;</span>].<span style="color:#000">astype</span>(<span style="color:#000">str</span>),
+                <span style="color:#000">df_company_topic_cluster</span>[<span style="color:#5a2">&#39;Cluster_Main&#39;</span>].<span style="color:#000">astype</span>(<span style="color:#000">str</span>))
+            
+            <span style="color:#888;font-style:italic"># Create mapping table for new clusters</span>
+            <span style="color:#000">d</span>=<span style="color:#000">defaultdict</span>(<span style="color:#000">str</span>)
+            <span style="color:#000">new_c</span> = <span style="color:#000">range</span>(<span style="color:#3af">1</span>,<span style="color:#000">df_company_topic_cluster</span>.<span style="color:#000">Cluster_Main</span>.<span style="color:#000">nunique</span>()+<span style="color:#3af">1</span>)
+            <span style="color:#000">d_i</span> = <span style="color:#3af">0</span>
+            <span style="color:#00f">for</span> <span style="color:#000">c</span> <span style="color:#00f">in</span> <span style="color:#000">df_company_topic_cluster</span>.<span style="color:#000">Cluster_Main</span>.<span style="color:#000">unique</span>():
+                <span style="color:#00f">if</span> <span style="color:#00f">not</span> <span style="color:#000">d</span>[<span style="color:#000">c</span>]:
+                    <span style="color:#000">d</span>[<span style="color:#000">c</span>]=<span style="color:#000">new_c</span>[<span style="color:#000">d_i</span>]
+                    <span style="color:#000">d_i</span> += <span style="color:#3af">1</span>
+            
+            <span style="color:#888;font-style:italic"># Re-map clusters based on mapping table</span>
+            <span style="color:#000">df_company_topic_cluster</span>[<span style="color:#5a2">&#39;Cluster&#39;</span>] = <span style="color:#000">df_company_topic_cluster</span>[<span style="color:#5a2">&#39;Cluster_Main&#39;</span>].<span style="color:#000">map</span>(<span style="color:#000">d</span>)
+            
+            <span style="color:#888;font-style:italic"># Re-set index</span>
+            <span style="color:#000">df_company_topic_cluster</span>.<span style="color:#000">reset_index</span>(<span style="color:#000">inplace</span>=<span style="color:#000">True</span>)
+            
+            <span style="color:#888;font-style:italic"># Delete new columns to make table look like in the beginning</span>
+            <span style="color:#00f">del</span> <span style="color:#000">df_company_topic_cluster</span>[<span style="color:#5a2">&#39;Cluster_deepdive&#39;</span>]
+            <span style="color:#00f">del</span> <span style="color:#000">df_company_topic_cluster</span>[<span style="color:#5a2">&#39;Cluster_Main&#39;</span>]
+            <span style="color:#00f">del</span> <span style="color:#000">df_company_topic_cluster</span>[<span style="color:#5a2">&#39;index&#39;</span>]
+            <span style="color:#888;font-style:italic">#print(df_company_topic_cluster.index)</span>
+                
+    <span style="color:#00f">return</span> <span style="color:#000">df_company_topic_cluster</span></code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">tweet_string</span>, <span style="color:#000">nmf_doc_topics</span>, <span style="color:#000">company_topic_matrix</span> = <span style="color:#000">read_from_saved_model</span>(<span style="color:#000">saved_model</span>=<span style="color:#5a2">&#39;20181113-140709_nmf_15.sav&#39;</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">array_doc_topics</span> = <span style="color:#000">nmf_doc_topics</span>
+<span style="color:#000">array_companies</span> = [<span style="color:#000">c</span> <span style="color:#00f">for</span> <span style="color:#000">c</span>,<span style="color:#000">_</span> <span style="color:#00f">in</span> <span style="color:#000">tweet_string</span>]
+<span style="color:#000">array_clusters</span> = <span style="color:#000">hierarchical_cluster</span>(<span style="color:#000">company_topic_matrix</span>,<span style="color:#3af">0.12</span>)
+<span style="color:#000">list_topic_names</span> = [<span style="color:#5a2">&#39;0-Problem_send_more_info&#39;</span>,<span style="color:#5a2">&#39;1-Enjoy_Our_Savings&#39;</span>,<span style="color:#5a2">&#39;2-Issue_Shoutout&#39;</span>,<span style="color:#5a2">&#39;3-Wrong_Company&#39;</span>,<span style="color:#5a2">&#39;4-CustomerCare_Will_Help&#39;</span>,<span style="color:#5a2">&#39;5-Future&#39;</span>,
+                    <span style="color:#5a2">&#39;6-Problem_Do_A_Claim&#39;</span>,<span style="color:#5a2">&#39;7-Apologies&#39;</span>,<span style="color:#5a2">&#39;8-Appreciation&#39;</span>,<span style="color:#5a2">&#39;9-Media_Queries&#39;</span>,<span style="color:#5a2">&#39;10-Store_Feedback&#39;</span>,
+                    <span style="color:#5a2">&#39;11-Payments&#39;</span>,<span style="color:#5a2">&#39;12-Community&#39;</span>,<span style="color:#5a2">&#39;13-Problem_Followup_on_Claim&#39;</span>,<span style="color:#5a2">&#39;14-Problem_Direct_Message&#39;</span>
+                   ]
+<span style="color:#000">list_dive_into_clusters</span> = [<span style="color:#3af">1</span>,<span style="color:#3af">2</span>]
+<span style="color:#000">list_dive_into_maxd</span> = [<span style="color:#3af">0.0185</span>,<span style="color:#3af">0.035</span>]
+<span style="color:#000">bool_rescale</span> = <span style="color:#000">True</span>
+
+<span style="color:#000">df</span> = <span style="color:#000">cluster_deep_dive</span>(<span style="color:#000">array_doc_topics</span>, <span style="color:#000">array_companies</span>, <span style="color:#000">array_clusters</span>, <span style="color:#000">list_topic_names</span>, <span style="color:#000">list_dive_into_clusters</span>, <span style="color:#000">list_dive_into_maxd</span>, <span style="color:#000">bool_rescale</span>)</code></pre></div>
+<pre><code>Found 4 clusters
+**************************************************
+Working on passed cluster_id 1
+Found 8 clusters
+**************************************************
+Working on passed cluster_id 2
+Found 7 clusters
+</code></pre>
+
+<h3 id="8-visualizing-clustering-results">8. Visualizing clustering results</h3>
+
+<h4 id="frequency-table">Frequency table</h4>
+
+<p>As a first viz I am showing the cluster frequency diagram.</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">ax</span> = <span style="color:#000">hierarchy_freq_table</span>(<span style="color:#000">df</span>.<span style="color:#000">Cluster</span>)[<span style="color:#5a2">&#39;%_comp&#39;</span>].<span style="color:#000">plot</span>(<span style="color:#000">kind</span>=<span style="color:#5a2">&#39;bar&#39;</span>,<span style="color:#000">figsize</span>=(<span style="color:#3af">15</span>, <span style="color:#3af">5</span>))
+<span style="color:#000">ax</span>.<span style="color:#000">set_xlabel</span>(<span style="color:#5a2">&#39;Clusters&#39;</span>)
+<span style="color:#000">ax</span>.<span style="color:#000">set_ylabel</span>(<span style="color:#5a2">&#39;</span><span style="color:#5a2">% s</span><span style="color:#5a2">hares&#39;</span>)</code></pre></div>
+<pre><code>Text(0, 0.5, '% shares')
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_32_1.png" alt="png" /></p>
+
+<h4 id="tsne-charts">TSNE charts</h4>
+
+<p>As a second viz I am showing a (custom) TSNE chart to bring the multi-dimensional problem into 2-dimensions (i.e. x-y axes). This graph shows that the identified clusters (shows as colors) are not far from each other in distance on the chart, where distance between points ABSTRACTLY represents the strenght of relationship between the elements (note: TSNE charts are almost impossible to interpret, the key thing is that same colors should not be too distributed from each other).</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> <span style="color:#000">sklearn.manifold</span> <span style="color:#00f">import</span> <span style="color:#000">TSNE</span>
+<span style="color:#000">plt</span>.<span style="color:#000">rcParams</span>[<span style="color:#5a2">&#39;figure.figsize&#39;</span>] = [<span style="color:#3af">10</span>, <span style="color:#3af">5</span>]
+
+<span style="color:#000">time_start</span> = <span style="color:#000">time</span>()
+
+<span style="color:#000">data</span>=<span style="color:#000">np</span>.<span style="color:#000">matrix</span>(<span style="color:#000">company_topic_matrix</span>.<span style="color:#000">Tweet_Topics</span>.<span style="color:#000">tolist</span>())
+
+<span style="color:#000">tsne</span> = <span style="color:#000">TSNE</span>(<span style="color:#000">n_components</span>=<span style="color:#3af">2</span>, <span style="color:#000">verbose</span>=<span style="color:#3af">1</span>, <span style="color:#000">perplexity</span>=<span style="color:#3af">70</span>, <span style="color:#000">n_iter</span>=<span style="color:#3af">5000</span>)
+<span style="color:#000">tsne_pca_results</span> = <span style="color:#000">tsne</span>.<span style="color:#000">fit_transform</span>(<span style="color:#000">data</span>)
+
+<span style="color:#000">df_tsne</span> = <span style="color:#000">None</span>
+<span style="color:#000">df_tsne</span> = <span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">df</span>.<span style="color:#000">Cluster</span>)
+<span style="color:#000">df_tsne</span>[<span style="color:#5a2">&#39;x-tsne-pca&#39;</span>] = <span style="color:#000">tsne_pca_results</span>[:,<span style="color:#3af">0</span>]
+<span style="color:#000">df_tsne</span>[<span style="color:#5a2">&#39;y-tsne-pca&#39;</span>] = <span style="color:#000">tsne_pca_results</span>[:,<span style="color:#3af">1</span>]
+
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;t-SNE done! Time elapsed: {} seconds&#39;</span>.<span style="color:#000">format</span>(<span style="color:#000">time</span>()-<span style="color:#000">time_start</span>))
+
+<span style="color:#000">plt</span>.<span style="color:#000">scatter</span>(<span style="color:#000">df_tsne</span>[<span style="color:#5a2">&#39;x-tsne-pca&#39;</span>], <span style="color:#000">df_tsne</span>[<span style="color:#5a2">&#39;y-tsne-pca&#39;</span>], <span style="color:#000">c</span>=<span style="color:#000">df_tsne</span>[<span style="color:#5a2">&#39;Cluster&#39;</span>], <span style="color:#000">cmap</span>=<span style="color:#000">plt</span>.<span style="color:#000">cm</span>.<span style="color:#000">get_cmap</span>(<span style="color:#5a2">&#34;jet&#34;</span>, <span style="color:#000">df_tsne</span>[<span style="color:#5a2">&#39;Cluster&#39;</span>].<span style="color:#000">nunique</span>()))
+<span style="color:#000">plt</span>.<span style="color:#000">colorbar</span>(<span style="color:#000">ticks</span>=<span style="color:#000">range</span>(<span style="color:#3af">1</span>,<span style="color:#000">df_tsne</span>[<span style="color:#5a2">&#39;Cluster&#39;</span>].<span style="color:#000">nunique</span>()+<span style="color:#3af">1</span>))
+<span style="color:#000">plt</span>.<span style="color:#000">clim</span>(<span style="color:#3af">0.5</span>, <span style="color:#000">df_tsne</span>[<span style="color:#5a2">&#39;Cluster&#39;</span>].<span style="color:#000">nunique</span>()+<span style="color:#3af">0.5</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">show</span>()</code></pre></div>
+<pre><code>[t-SNE] Computing 211 nearest neighbors...
+[t-SNE] Indexed 239 samples in 0.000s...
+[t-SNE] Computed neighbors for 239 samples in 0.012s...
+[t-SNE] Computed conditional probabilities for sample 239 / 239
+[t-SNE] Mean sigma: 0.002370
+[t-SNE] KL divergence after 250 iterations with early exaggeration: 51.601948
+[t-SNE] KL divergence after 1100 iterations: 0.291489
+t-SNE done! Time elapsed: 2.903787851333618 seconds
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_34_1.png" alt="png" /></p>
+
+<h4 id="simple-listing">Simple listing</h4>
+
+<p>As a very simple summary, I am printing the identified cluster for each of the companies. Some interesting groups are already visible</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">for</span> <span style="color:#000">name</span>, <span style="color:#000">values</span> <span style="color:#00f">in</span> <span style="color:#000">df</span>[[<span style="color:#5a2">&#39;Company&#39;</span>,<span style="color:#5a2">&#39;Cluster&#39;</span>]].<span style="color:#000">groupby</span>(<span style="color:#5a2">&#39;Cluster&#39;</span>):
+    <span style="color:#000">v</span>=<span style="color:#5a2">&#39;, &#39;</span>.<span style="color:#000">join</span>(<span style="color:#000">values</span>.<span style="color:#000">Company</span>.<span style="color:#000">tolist</span>())
+    <span style="color:#00f">print</span>(<span style="color:#000">f</span><span style="color:#5a2">&#39;Cluster: {name}: {v}&#39;</span>)
+    <span style="color:#00f">print</span>()</code></pre></div>
+<pre><code>Cluster: 1: 3M, Adobe, Aetna, Ally, CapitalOne, Cummins, DRHorton, Dillards, Discover, GapInc, HormelFoods, JohnDeere, LibertyMutual, MolsonCoors, MurphyUSA, Nationwide, Sysco, Target, Voya, WaldorfAstoria, Walmart, honeywell, keybank, lincolnfingroup, oreillyauto
+
+Cluster: 2: ADP, AIGinsurance, AnthemInc, CP_News, CarMax, CocaColaCo, MDLZ, MarriottRewards, TIAA, TheHartford, WeAreFarmers, amfam
+
+Cluster: 3: AEPnews, AGCOcorp, AbbottNews, AlaskaTLF, Alcoa, Applied4Tech, ArrowGlobal, AutoOwnersIns, BallCorpHQ, BankofAmerica, BestBuy, CHRobinsonInc, CVSHealth, CampbellSoupCo, Chase, Chesapeake, Cigna, CitizensBank, Cognizant, DanaInc_, Disney, EXPD_Official, Emerson_News, GameStop, Genworth, GetSpectrum, HDSupply, HIIndustries, HarrisCorp, HenrySchein, HersheyCompany, InterpublicIPG, JLL, KCCorp, L_Brands, LandOLakesInc, LillyPad, MarathonPetroCo, Merck, MosaicCompany, NCRCorporation, NFLonCBS, NM_News, Omnicom, OwensCorning, PenskeCars, Qualcomm, RGA_RE, RalphLauren, RyderSystemInc, SearsHoldings, SonicAutomotive, Starbucks, SunTrust, USFoods, UTC, UWT, Veritiv, Xerox, darden, dish, edisonintl, goodyear, grainger, intel, kindredhealth, lithiamotors, massmutual, mutualofomaha, newell_brands, oct, packagingcorp, salesforce, synchrony, unumnews, usbank, westerndigital
+
+Cluster: 4: AdvanceAuto, Chevron, Publix, caseysgenstore
+
+Cluster: 5: Albertsons, DICKS, Lowes, kroger, riteaid
+
+Cluster: 6: Allstate, AmericanAir, BBT, BedBathBeyond, ConagraBrands, DellTech, Delta, DukeEnergy, FrontierCorp, GeneralMills, Hanes, JetBlue, Kohls, KraftHeinzCo, Lennar, Nordstrom, SouthwestAir, StateFarm, XcelEnergyCO, erie_insurance, firstenergycorp, footlocker, generalelectric
+
+Cluster: 7: AltriaNews, AmericanAxle, Amgen, Anixter, Aramark, Avnet, CDWCorp, CSX, CalpineCareers, Celgene, Corning, DXCTechnology, DaVita, EastmanChemCo, Ecolab, FISGlobal, FluorCorp, GoldmanSachs, Graybar, HPE, Halliburton, Huntsman_Corp, IntlPaperCo, JNJNews, LamResearch, LasVegasSands, LearCorporation, LeidosInc, LockheedMartin, MMC_Global, ManpowerGroup, McKesson, Microsoft, MorganStanley, MotoSolutions, NOVGlobal, Newmont, Oracle, PPG, ROKAutomation, RaymondJames, Raytheon, SanminaCorp, SouthernCompany, TXInstruments, TysonFoods, UnitedHealthGrp, United_Rentals, Univar, WestRock, WhirlpoolCorp, WilliamsUpdates, abbvie, airproducts, baxter_intl, biogen, blackrock, blackstone, bmsnews, cardinalhealth, conocophillips, exxonmobil, kiewit, nvidia, thermofisher, zimmerbiomet
+
+Cluster: 8: Assurant, RepublicService, XPOLogistics
+
+Cluster: 9: AutoNation, DollarGeneral, InsidePMI
+
+Cluster: 10: DTE_Energy, officedepot
+
+Cluster: 11: DrPepperSnapple, FedEx, HP, KelloggCompany, NAPAKnowHow, Progressive, Prudential, Thrivent, Travelers, WellsFargo, molinahealth, principal
+
+Cluster: 12: HomeDepot
+
+Cluster: 13: McDonaldsCorp, PepsiCo
+
+Cluster: 14: MetLife
+
+Cluster: 15: Visa
+
+Cluster: 16: WarnerMediaGrp
+
+Cluster: 17: autozone
+</code></pre>
+
+<h4 id="detailed-cluster-analyis">Detailed cluster analyis</h4>
+
+<p>To give more flavour to the clustering viz, the below charts show cluster-by-cluster the companies that belong there (lines) and the relative topic-frequency along which each company has tweeted in the past 1000 tweets.</p>
+
+<p>This technique enables us to understand the basis of the clusters (based on the topics), have a closer look which companies ended up together, and infer some potentially present business relationships, e.g. airlines ended up in cluster 6, and they tend to use Twitter mainly for customer-service. Whereas some other companies use it more to publish some ideas about the future, or to just simply praise their customers.</p>
+
+<p><img src="/Post_images/20181210_Fletcher/Slide_images/Slide05.png" alt="png" />
+<img src="/Post_images/20181210_Fletcher/Slide_images/Slide07.png" alt="png" /></p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">grouped</span> = <span style="color:#000">df</span>.<span style="color:#000">groupby</span>(<span style="color:#5a2">&#39;Cluster&#39;</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">rcParams</span>[<span style="color:#5a2">&#39;figure.figsize&#39;</span>] = [<span style="color:#3af">16</span>, <span style="color:#3af">5</span>]
+<span style="color:#000">font</span> = {<span style="color:#5a2">&#39;size&#39;</span>   : <span style="color:#3af">22</span>}
+<span style="color:#000">plt</span>.<span style="color:#000">rc</span>(<span style="color:#5a2">&#39;font&#39;</span>, **<span style="color:#000">font</span>)
+
+<span style="color:#000">cluster_average</span> = <span style="color:#000">grouped</span>[<span style="color:#000">df</span>.<span style="color:#000">columns</span>[<span style="color:#3af">1</span>:-<span style="color:#3af">1</span>]].<span style="color:#000">agg</span>(<span style="color:#5a2">&#39;mean&#39;</span>).<span style="color:#000">reset_index</span>()
+<span style="color:#000">cluster_average_cleaned</span> = <span style="color:#000">cluster_average</span>.<span style="color:#000">drop</span>([<span style="color:#5a2">&#39;Cluster&#39;</span>],<span style="color:#000">axis</span>=<span style="color:#3af">1</span>).<span style="color:#000">T</span>
+
+
+<span style="color:#00f">for</span> <span style="color:#000">name</span>, <span style="color:#000">group</span> <span style="color:#00f">in</span> <span style="color:#000">grouped</span>:
+    
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;*&#39;</span>*<span style="color:#3af">54</span>,<span style="color:#000">f</span><span style="color:#5a2">&#39;Cluster {name}&#39;</span>,<span style="color:#5a2">&#39;*&#39;</span>*<span style="color:#3af">54</span>)
+    <span style="color:#888;font-style:italic">#print(np.array(group.Company))</span>
+    <span style="color:#000">group</span>.<span style="color:#000">drop</span>([<span style="color:#5a2">&#39;Cluster&#39;</span>],<span style="color:#000">axis</span>=<span style="color:#3af">1</span>).<span style="color:#000">T</span>.<span style="color:#000">iloc</span>[<span style="color:#3af">1</span>:].<span style="color:#000">plot</span>(<span style="color:#000">legend</span>=<span style="color:#000">None</span>)
+    <span style="color:#888;font-style:italic">#print(group.T.index[1:-1])</span>
+    <span style="color:#000">plt</span>.<span style="color:#000">xticks</span>(<span style="color:#000">range</span>(<span style="color:#3af">15</span>),[<span style="color:#5a2">&#39;</span><span style="color:#5a2">\n</span><span style="color:#5a2">&#39;</span>.<span style="color:#000">join</span>(<span style="color:#000">wrap</span>(<span style="color:#000">l</span>, <span style="color:#3af">7</span>)) <span style="color:#00f">for</span> <span style="color:#000">l</span> <span style="color:#00f">in</span> <span style="color:#000">group</span>.<span style="color:#000">T</span>.<span style="color:#000">index</span>[<span style="color:#3af">1</span>:-<span style="color:#3af">1</span>]])
+    <span style="color:#000">plt</span>.<span style="color:#000">title</span>(<span style="color:#5a2">&#39;Cluster company split tweet topics&#39;</span>)
+    <span style="color:#888;font-style:italic">#plt.legend(group.Company)</span>
+
+    <span style="color:#888;font-style:italic"># Put a legend below current axis</span>
+    <span style="color:#000">plt</span>.<span style="color:#000">legend</span>(<span style="color:#000">group</span>.<span style="color:#000">Company</span>,<span style="color:#000">loc</span>=<span style="color:#5a2">&#39;upper center&#39;</span>, <span style="color:#000">bbox_to_anchor</span>=(<span style="color:#3af">0.5</span>, -<span style="color:#3af">0.2</span>),<span style="color:#000">ncol</span>=<span style="color:#3af">8</span>, <span style="color:#000">fancybox</span>=<span style="color:#000">True</span>)
+    
+    <span style="color:#000">plt</span>.<span style="color:#000">show</span>()
+    
+    <span style="color:#000">i</span> = <span style="color:#000">name</span>-<span style="color:#3af">1</span>
+    <span style="color:#000">cluster_average_cleaned</span>[<span style="color:#000">i</span>].<span style="color:#000">plot</span>(<span style="color:#000">legend</span>=<span style="color:#000">None</span>)
+    <span style="color:#000">plt</span>.<span style="color:#000">xticks</span>(<span style="color:#000">range</span>(<span style="color:#3af">15</span>),[<span style="color:#5a2">&#39;</span><span style="color:#5a2">\n</span><span style="color:#5a2">&#39;</span>.<span style="color:#000">join</span>(<span style="color:#000">wrap</span>(<span style="color:#000">l</span>, <span style="color:#3af">7</span>)) <span style="color:#00f">for</span> <span style="color:#000">l</span> <span style="color:#00f">in</span> <span style="color:#000">cluster_average</span>.<span style="color:#000">T</span>.<span style="color:#000">index</span>[<span style="color:#3af">1</span>:]])
+    <span style="color:#000">plt</span>.<span style="color:#000">title</span>(<span style="color:#5a2">&#39;Cluster average tweet topics&#39;</span>)
+    <span style="color:#888;font-style:italic">#plt.legend(cluster_average.Cluster[i:],loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, -0.2),ncol=8, fancybox=True)</span>
+    <span style="color:#000">plt</span>.<span style="color:#000">show</span>()</code></pre></div>
+<pre><code>****************************************************** Cluster 1 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_1.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_2.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 2 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_4.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_5.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 3 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_7.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_8.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 4 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_10.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_11.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 5 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_13.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_14.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 6 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_16.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_17.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 7 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_19.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_20.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 8 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_22.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_23.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 9 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_25.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_26.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 10 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_28.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_29.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 11 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_31.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_32.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 12 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_34.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_35.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 13 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_37.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_38.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 14 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_40.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_41.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 15 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_43.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_44.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 16 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_46.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_47.png" alt="png" /></p>
+
+<pre><code>****************************************************** Cluster 17 ******************************************************
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_49.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_38_50.png" alt="png" /></p>
+
+<hr />
+
+<h4 id="sections-not-in-use-but-still-relevant">Sections not in use, but still relevant</h4>
+
+<p>Below are my trials with KMeans clustering before I realized I want to use hierarchical clustering. The detailed silhoutte analysis shows the weak clusters identified.</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Clustering: KMeans</span>
+<span style="color:#00f">from</span> <span style="color:#000">sklearn.cluster</span> <span style="color:#00f">import</span> <span style="color:#000">MiniBatchKMeans</span>
+<span style="color:#000">km</span> = <span style="color:#000">MiniBatchKMeans</span>(<span style="color:#000">n_clusters</span>=<span style="color:#3af">13</span>)
+<span style="color:#000">km</span>.<span style="color:#000">fit</span>(<span style="color:#000">np</span>.<span style="color:#000">matrix</span>(<span style="color:#000">company_topic_matrix</span>.<span style="color:#000">Tweet_Topics</span>.<span style="color:#000">tolist</span>()))</code></pre></div>
+<pre><code>MiniBatchKMeans(batch_size=100, compute_labels=True, init='k-means++',
+        init_size=None, max_iter=100, max_no_improvement=10, n_clusters=13,
+        n_init=3, random_state=None, reassignment_ratio=0.01, tol=0.0,
+        verbose=0)
+</code></pre>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">unique</span>, <span style="color:#000">counts</span> = <span style="color:#000">np</span>.<span style="color:#000">unique</span>(<span style="color:#000">km</span>.<span style="color:#000">labels_</span>, <span style="color:#000">return_counts</span>=<span style="color:#000">True</span>)
+<span style="color:#000">total</span> = <span style="color:#000">np</span>.<span style="color:#000">sum</span>(<span style="color:#000">counts</span>)
+<span style="color:#00f">print</span>(<span style="color:#000">np</span>.<span style="color:#000">asarray</span>((<span style="color:#000">unique</span>, <span style="color:#000">counts</span>/<span style="color:#000">total</span>*<span style="color:#3af">100</span>)).<span style="color:#000">T</span>)</code></pre></div>
+<pre><code>[[ 0.          1.25523013]
+ [ 1.         56.90376569]
+ [ 2.          0.41841004]
+ [ 3.          0.41841004]
+ [ 4.          5.43933054]
+ [ 5.          2.09205021]
+ [ 6.          1.25523013]
+ [ 7.          2.51046025]
+ [ 8.          1.25523013]
+ [ 9.         20.92050209]
+ [10.          0.41841004]
+ [11.          6.27615063]
+ [12.          0.83682008]]
+</code></pre>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">n_clusters_check</span>(<span style="color:#000">data</span>):
+    <span style="color:#000">SSEs</span> = []
+    <span style="color:#000">Sil_coefs</span> = []
+    <span style="color:#00f">for</span> <span style="color:#000">k</span> <span style="color:#00f">in</span> <span style="color:#000">range</span>(<span style="color:#3af">2</span>,<span style="color:#3af">40</span>):
+        <span style="color:#000">km</span> = <span style="color:#000">MiniBatchKMeans</span>(<span style="color:#000">n_clusters</span>=<span style="color:#000">k</span>, <span style="color:#000">random_state</span>=<span style="color:#3af">1</span>)
+        <span style="color:#000">km</span>.<span style="color:#000">fit</span>(<span style="color:#000">data</span>)
+        <span style="color:#000">labels</span> = <span style="color:#000">km</span>.<span style="color:#000">labels_</span>
+        <span style="color:#000">Sil_coefs</span>.<span style="color:#000">append</span>(<span style="color:#000">metrics</span>.<span style="color:#000">silhouette_score</span>(<span style="color:#000">data</span>, <span style="color:#000">labels</span>, <span style="color:#000">metric</span>=<span style="color:#5a2">&#39;euclidean&#39;</span>))
+        <span style="color:#000">SSEs</span>.<span style="color:#000">append</span>(<span style="color:#000">km</span>.<span style="color:#000">inertia_</span>) <span style="color:#888;font-style:italic"># The SSE is just inertia, we</span>
+                                                <span style="color:#888;font-style:italic"># could have just said km.inertia_</span>
+    <span style="color:#00f">return</span> <span style="color:#000">SSEs</span>, <span style="color:#000">Sil_coefs</span>
+
+<span style="color:#00f">def</span> <span style="color:#000">plot_n_clusters</span>(<span style="color:#000">data</span>):
+    
+    <span style="color:#000">SSEs</span>, <span style="color:#000">Sil_coefs</span> = <span style="color:#000">n_clusters_check</span>(<span style="color:#000">data</span>)
+    
+    <span style="color:#000">fig</span>, (<span style="color:#000">ax1</span>, <span style="color:#000">ax2</span>) = <span style="color:#000">plt</span>.<span style="color:#000">subplots</span>(<span style="color:#3af">1</span>,<span style="color:#3af">2</span>, <span style="color:#000">figsize</span>=(<span style="color:#3af">15</span>,<span style="color:#3af">5</span>), <span style="color:#000">sharex</span>=<span style="color:#000">True</span>)
+    <span style="color:#000">k_clusters</span> = <span style="color:#000">range</span>(<span style="color:#3af">2</span>,<span style="color:#3af">40</span>)
+    <span style="color:#000">ax1</span>.<span style="color:#000">plot</span>(<span style="color:#000">k_clusters</span>, <span style="color:#000">Sil_coefs</span>)
+    <span style="color:#000">ax1</span>.<span style="color:#000">set_xlabel</span>(<span style="color:#5a2">&#39;number of clusters&#39;</span>)
+    <span style="color:#000">ax1</span>.<span style="color:#000">set_ylabel</span>(<span style="color:#5a2">&#39;silhouette coefficient&#39;</span>)
+
+    <span style="color:#888;font-style:italic"># plot here on ax2</span>
+    <span style="color:#000">ax2</span>.<span style="color:#000">plot</span>(<span style="color:#000">k_clusters</span>, <span style="color:#000">SSEs</span>)
+    <span style="color:#000">ax2</span>.<span style="color:#000">set_xlabel</span>(<span style="color:#5a2">&#39;number of clusters&#39;</span>)
+    <span style="color:#000">ax2</span>.<span style="color:#000">set_ylabel</span>(<span style="color:#5a2">&#39;SSE&#39;</span>);</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> <span style="color:#000">sklearn</span> <span style="color:#00f">import</span> <span style="color:#000">metrics</span>
+
+<span style="color:#000">data</span> = <span style="color:#000">np</span>.<span style="color:#000">matrix</span>(<span style="color:#000">company_topic_matrix</span>.<span style="color:#000">Tweet_Topics</span>.<span style="color:#000">tolist</span>())
+<span style="color:#000">plot_n_clusters</span>(<span style="color:#000">data</span>)</code></pre></div>
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_43_0.png" alt="png" /></p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">show_variance_explained_plots</span>(<span style="color:#000">model</span>):
+    
+    <span style="color:#000">var_exp_array</span> = <span style="color:#000">model</span>.<span style="color:#000">explained_variance_ratio_</span>
+    <span style="color:#000">n_comps</span> = <span style="color:#000">var_exp_array</span>.<span style="color:#000">shape</span>[<span style="color:#3af">0</span>] 
+    
+    <span style="color:#000">fig</span>, <span style="color:#000">ax</span> = <span style="color:#000">plt</span>.<span style="color:#000">subplots</span>(<span style="color:#3af">1</span>,<span style="color:#3af">2</span>,<span style="color:#000">figsize</span>=(<span style="color:#3af">10</span>,<span style="color:#3af">4</span>))
+    
+    <span style="color:#000">ax</span>[<span style="color:#3af">0</span>].<span style="color:#000">fill_between</span>(<span style="color:#000">range</span>(<span style="color:#000">n_comps</span>), <span style="color:#000">var_exp_array</span>)
+    <span style="color:#000">ax</span>[<span style="color:#3af">0</span>].<span style="color:#000">set_title</span>(<span style="color:#5a2">&#39;Variance Explained by Nth Principal Component&#39;</span>)
+    
+    <span style="color:#000">ax</span>[<span style="color:#3af">1</span>].<span style="color:#000">fill_between</span>(<span style="color:#000">range</span>(<span style="color:#000">n_comps</span>), <span style="color:#000">np</span>.<span style="color:#000">cumsum</span>(<span style="color:#000">var_exp_array</span>))
+    <span style="color:#000">ax</span>[<span style="color:#3af">1</span>].<span style="color:#000">set_title</span>(<span style="color:#5a2">&#39;Cumulative Variance Explained by N Components&#39;</span>)
+    
+    <span style="color:#000">plt</span>.<span style="color:#000">show</span>()</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">show_variance_explained_plots</span>(<span style="color:#000">lsi_model</span>)</code></pre></div>
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_45_0.png" alt="png" /></p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> <span style="color:#000">__future__</span> <span style="color:#00f">import</span> <span style="color:#000">print_function</span>
+
+<span style="color:#00f">from</span> <span style="color:#000">sklearn.datasets</span> <span style="color:#00f">import</span> <span style="color:#000">make_blobs</span>
+<span style="color:#00f">from</span> <span style="color:#000">sklearn.cluster</span> <span style="color:#00f">import</span> <span style="color:#000">KMeans</span>
+<span style="color:#00f">from</span> <span style="color:#000">sklearn.metrics</span> <span style="color:#00f">import</span> <span style="color:#000">silhouette_samples</span>, <span style="color:#000">silhouette_score</span>
+
+<span style="color:#00f">import</span> <span style="color:#000">matplotlib.pyplot</span> <span style="color:#00f">as</span> <span style="color:#000">plt</span>
+<span style="color:#00f">import</span> <span style="color:#000">matplotlib.cm</span> <span style="color:#00f">as</span> <span style="color:#000">cm</span>
+<span style="color:#00f">import</span> <span style="color:#000">numpy</span> <span style="color:#00f">as</span> <span style="color:#000">np</span>
+
+<span style="color:#888;font-style:italic"># Generating the sample data from make_blobs</span>
+<span style="color:#888;font-style:italic"># This particular setting has one distinct cluster and 3 clusters placed close</span>
+<span style="color:#888;font-style:italic"># together.</span>
+<span style="color:#000">X</span> = <span style="color:#000">data</span>
+
+<span style="color:#000">range_n_clusters</span> = <span style="color:#000">range</span>(<span style="color:#3af">2</span>,<span style="color:#3af">15</span>)
+
+<span style="color:#00f">for</span> <span style="color:#000">n_clusters</span> <span style="color:#00f">in</span> <span style="color:#000">range_n_clusters</span>:
+    <span style="color:#888;font-style:italic"># Create a subplot with 1 row and 2 columns</span>
+    <span style="color:#000">fig</span>, <span style="color:#000">ax1</span> = <span style="color:#000">plt</span>.<span style="color:#000">subplots</span>(<span style="color:#3af">1</span>, <span style="color:#3af">1</span>)
+    <span style="color:#000">fig</span>.<span style="color:#000">set_size_inches</span>(<span style="color:#3af">18</span>, <span style="color:#3af">7</span>)
+
+    <span style="color:#888;font-style:italic"># The 1st subplot is the silhouette plot</span>
+    <span style="color:#888;font-style:italic"># The silhouette coefficient can range from -1, 1 but in this example all</span>
+    <span style="color:#888;font-style:italic"># lie within [-0.1, 1]</span>
+    <span style="color:#000">ax1</span>.<span style="color:#000">set_xlim</span>([-<span style="color:#3af">0.1</span>, <span style="color:#3af">1</span>])
+    <span style="color:#888;font-style:italic"># The (n_clusters+1)*10 is for inserting blank space between silhouette</span>
+    <span style="color:#888;font-style:italic"># plots of individual clusters, to demarcate them clearly.</span>
+    <span style="color:#000">ax1</span>.<span style="color:#000">set_ylim</span>([<span style="color:#3af">0</span>, <span style="color:#000">len</span>(<span style="color:#000">X</span>) + (<span style="color:#000">n_clusters</span> + <span style="color:#3af">1</span>) * <span style="color:#3af">10</span>])
+
+    <span style="color:#888;font-style:italic"># Initialize the clusterer with n_clusters value and a random generator</span>
+    <span style="color:#888;font-style:italic"># seed of 10 for reproducibility.</span>
+    <span style="color:#000">clusterer</span> = <span style="color:#000">KMeans</span>(<span style="color:#000">n_clusters</span>=<span style="color:#000">n_clusters</span>, <span style="color:#000">random_state</span>=<span style="color:#3af">10</span>)
+    <span style="color:#000">cluster_labels</span> = <span style="color:#000">clusterer</span>.<span style="color:#000">fit_predict</span>(<span style="color:#000">X</span>)
+
+    <span style="color:#888;font-style:italic"># The silhouette_score gives the average value for all the samples.</span>
+    <span style="color:#888;font-style:italic"># This gives a perspective into the density and separation of the formed</span>
+    <span style="color:#888;font-style:italic"># clusters</span>
+    <span style="color:#000">silhouette_avg</span> = <span style="color:#000">silhouette_score</span>(<span style="color:#000">X</span>, <span style="color:#000">cluster_labels</span>)
+    <span style="color:#00f">print</span>(<span style="color:#5a2">&#34;For n_clusters =&#34;</span>, <span style="color:#000">n_clusters</span>,
+          <span style="color:#5a2">&#34;The average silhouette_score is :&#34;</span>, <span style="color:#000">silhouette_avg</span>)
+
+    <span style="color:#888;font-style:italic"># Compute the silhouette scores for each sample</span>
+    <span style="color:#000">sample_silhouette_values</span> = <span style="color:#000">silhouette_samples</span>(<span style="color:#000">X</span>, <span style="color:#000">cluster_labels</span>)
+
+    <span style="color:#000">y_lower</span> = <span style="color:#3af">10</span>
+    <span style="color:#00f">for</span> <span style="color:#000">i</span> <span style="color:#00f">in</span> <span style="color:#000">range</span>(<span style="color:#000">n_clusters</span>):
+        <span style="color:#888;font-style:italic"># Aggregate the silhouette scores for samples belonging to</span>
+        <span style="color:#888;font-style:italic"># cluster i, and sort them</span>
+        <span style="color:#000">ith_cluster_silhouette_values</span> = \
+            <span style="color:#000">sample_silhouette_values</span>[<span style="color:#000">cluster_labels</span> == <span style="color:#000">i</span>]
+
+        <span style="color:#000">ith_cluster_silhouette_values</span>.<span style="color:#000">sort</span>()
+
+        <span style="color:#000">size_cluster_i</span> = <span style="color:#000">ith_cluster_silhouette_values</span>.<span style="color:#000">shape</span>[<span style="color:#3af">0</span>]
+        <span style="color:#000">y_upper</span> = <span style="color:#000">y_lower</span> + <span style="color:#000">size_cluster_i</span>
+
+        <span style="color:#000">color</span> = <span style="color:#000">cm</span>.<span style="color:#000">nipy_spectral</span>(<span style="color:#000">float</span>(<span style="color:#000">i</span>) / <span style="color:#000">n_clusters</span>)
+        <span style="color:#000">ax1</span>.<span style="color:#000">fill_betweenx</span>(<span style="color:#000">np</span>.<span style="color:#000">arange</span>(<span style="color:#000">y_lower</span>, <span style="color:#000">y_upper</span>),
+                          <span style="color:#3af">0</span>, <span style="color:#000">ith_cluster_silhouette_values</span>,
+                          <span style="color:#000">facecolor</span>=<span style="color:#000">color</span>, <span style="color:#000">edgecolor</span>=<span style="color:#000">color</span>, <span style="color:#000">alpha</span>=<span style="color:#3af">0.7</span>)
+
+        <span style="color:#888;font-style:italic"># Label the silhouette plots with their cluster numbers at the middle</span>
+        <span style="color:#000">ax1</span>.<span style="color:#000">text</span>(-<span style="color:#3af">0.05</span>, <span style="color:#000">y_lower</span> + <span style="color:#3af">0.5</span> * <span style="color:#000">size_cluster_i</span>, <span style="color:#000">str</span>(<span style="color:#000">i</span>))
+
+        <span style="color:#888;font-style:italic"># Compute the new y_lower for next plot</span>
+        <span style="color:#000">y_lower</span> = <span style="color:#000">y_upper</span> + <span style="color:#3af">10</span>  <span style="color:#888;font-style:italic"># 10 for the 0 samples</span>
+
+    <span style="color:#000">ax1</span>.<span style="color:#000">set_title</span>(<span style="color:#5a2">&#34;The silhouette plot for the various clusters.&#34;</span>)
+    <span style="color:#000">ax1</span>.<span style="color:#000">set_xlabel</span>(<span style="color:#5a2">&#34;The silhouette coefficient values&#34;</span>)
+    <span style="color:#000">ax1</span>.<span style="color:#000">set_ylabel</span>(<span style="color:#5a2">&#34;Cluster label&#34;</span>)
+
+    <span style="color:#888;font-style:italic"># The vertical line for average silhouette score of all the values</span>
+    <span style="color:#000">ax1</span>.<span style="color:#000">axvline</span>(<span style="color:#000">x</span>=<span style="color:#000">silhouette_avg</span>, <span style="color:#000">color</span>=<span style="color:#5a2">&#34;red&#34;</span>, <span style="color:#000">linestyle</span>=<span style="color:#5a2">&#34;--&#34;</span>)
+
+    <span style="color:#000">ax1</span>.<span style="color:#000">set_yticks</span>([])  <span style="color:#888;font-style:italic"># Clear the yaxis labels / ticks</span>
+    <span style="color:#000">ax1</span>.<span style="color:#000">set_xticks</span>([-<span style="color:#3af">0.1</span>, <span style="color:#3af">0</span>, <span style="color:#3af">0.2</span>, <span style="color:#3af">0.4</span>, <span style="color:#3af">0.6</span>, <span style="color:#3af">0.8</span>, <span style="color:#3af">1</span>])
+
+    <span style="color:#000">plt</span>.<span style="color:#000">suptitle</span>((<span style="color:#5a2">&#34;Silhouette analysis for KMeans clustering on sample data &#34;</span>
+                  <span style="color:#5a2">&#34;with n_clusters = </span><span style="color:#5a2">%d</span><span style="color:#5a2">&#34;</span> % <span style="color:#000">n_clusters</span>),
+                 <span style="color:#000">fontsize</span>=<span style="color:#3af">14</span>, <span style="color:#000">fontweight</span>=<span style="color:#5a2">&#39;bold&#39;</span>)
+
+<span style="color:#000">plt</span>.<span style="color:#000">show</span>()</code></pre></div>
+<pre><code>For n_clusters = 2 The average silhouette_score is : 0.8986988319795822
+For n_clusters = 3 The average silhouette_score is : 0.8667965252187471
+For n_clusters = 4 The average silhouette_score is : 0.41195436173718575
+For n_clusters = 5 The average silhouette_score is : 0.4219381410304533
+For n_clusters = 6 The average silhouette_score is : 0.42767371272258947
+For n_clusters = 7 The average silhouette_score is : 0.43409940385179036
+For n_clusters = 8 The average silhouette_score is : 0.23933684619767728
+For n_clusters = 9 The average silhouette_score is : 0.2904368838689066
+For n_clusters = 10 The average silhouette_score is : 0.2488217447501851
+For n_clusters = 11 The average silhouette_score is : 0.24251617076071022
+For n_clusters = 12 The average silhouette_score is : 0.26415476136183297
+For n_clusters = 13 The average silhouette_score is : 0.27696632549696604
+For n_clusters = 14 The average silhouette_score is : 0.23469905394496227
+</code></pre>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_46_1.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_46_2.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_46_3.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_46_4.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_46_5.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_46_6.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_46_7.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_46_8.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_46_9.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_46_10.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_46_11.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_46_12.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181210_Fletcher/Graph_images/output_46_13.png" alt="png" /></p>
+
+  </section>
+  <div class="clearfix">
+    
+      <div class="post-date pull-left">
+        <span class="small">
+          Posted on
+          Dec 11, 2018 at 01:00
+        </span>
+      </div>
+    
+    <div class="pull-right">
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/telecom/">#Telecom</a></span>
+        
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/hierarchical/">#Hierarchical</a></span>
+        
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/clustering/">#Clustering</a></span>
+        
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/b2b/">#B2b</a></span>
+        
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/topic/">#Topic</a></span>
+        
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/twitter/">#Twitter</a></span>
+        
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/nmf/">#Nmf</a></span>
+        
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/natural-language-processing/">#Natural Language Processing</a></span>
+        
+      
+    </div>
+  </div>
+  <footer>
+    
+      
+    
+    
+      
+        <div class="delimiter"></div>
+        <section class="author-info row">
+          <div class="author-avatar col-md-2">
+            
+              <img alt="Author Avatar" src="/images/KS.jpg" />
+            
+          </div>
+          <div class="author-meta col-md-10">
+            
+              <h2 class="author-name text-primary">Krisztian Sandor</h2>
+            
+            
+              <div class="author-bio">I&#39;m Krisztian an economist and data scientist from Budapest, Hungary.</div>
+            
+            
+              <a class="btn btn-primary author-contact" href="https://www.linkedin.com/in/krisztiansandor/">
+                <div>
+                  <i class="fa fa-envelope-o" aria-hidden="true"></i>
+                  &nbsp;Contact me
+                </div>
+              </a>
+            
+          </div>
+        </section>
+      
+    <div class="delimiter"></div>
+    <div class="pager-container">
+      
+        <a class="btn btn-primary btn-older-posts" href="https://kriszsandor.github.io/posts/20181213_passionproject/">
+          <div>
+            <span aria-hidden="true">&larr;</span> Older Posts
+          </div>
+        </a>
+      
+      
+        <a class="btn btn-primary btn-newer-posts disabled" href="#">
+          <div>
+            Newer Posts <span aria-hidden="true">&rarr;</span>
+          </div>
+        </a>
+      
+    </div>
+  </footer>
+</article>
+<div class="delimiter"></div>
+
+  </main>
+  <footer class="container global-footer">
+    <div class="copyright-note pull-left">
+      &copy; Krisztian Sandor, Budapest, Hungary
+    </div>
+    <div class="sns-links hidden-print">
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  
+  
+  
+  
+</body>
+</html>
+
