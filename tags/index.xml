@@ -66,6 +66,15 @@
     </item>
     
     <item>
+      <title>Deezer</title>
+      <link>https://kriszsandor.github.io/tags/deezer/</link>
+      <pubDate>Wed, 12 Dec 2018 11:20:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/deezer/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Hierarchical</title>
       <link>https://kriszsandor.github.io/tags/hierarchical/</link>
       <pubDate>Tue, 11 Dec 2018 01:00:26 -0500</pubDate>
@@ -75,11 +84,47 @@
     </item>
     
     <item>
+      <title>Kaggle</title>
+      <link>https://kriszsandor.github.io/tags/kaggle/</link>
+      <pubDate>Wed, 12 Dec 2018 11:20:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/kaggle/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Keras</title>
       <link>https://kriszsandor.github.io/tags/keras/</link>
       <pubDate>Fri, 07 Dec 2018 11:49:26 -0500</pubDate>
       
       <guid>https://kriszsandor.github.io/tags/keras/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Kkbox</title>
+      <link>https://kriszsandor.github.io/tags/kkbox/</link>
+      <pubDate>Wed, 12 Dec 2018 11:20:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/kkbox/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Logistic Regression</title>
+      <link>https://kriszsandor.github.io/tags/logistic-regression/</link>
+      <pubDate>Wed, 12 Dec 2018 11:20:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/logistic-regression/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Music</title>
+      <link>https://kriszsandor.github.io/tags/music/</link>
+      <pubDate>Wed, 12 Dec 2018 11:20:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/music/</guid>
       <description></description>
     </item>
     
@@ -98,6 +143,24 @@
       <pubDate>Tue, 11 Dec 2018 01:00:26 -0500</pubDate>
       
       <guid>https://kriszsandor.github.io/tags/nmf/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Random Forest</title>
+      <link>https://kriszsandor.github.io/tags/random-forest/</link>
+      <pubDate>Wed, 12 Dec 2018 11:20:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/random-forest/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Recommendation</title>
+      <link>https://kriszsandor.github.io/tags/recommendation/</link>
+      <pubDate>Wed, 12 Dec 2018 11:20:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/recommendation/</guid>
       <description></description>
     </item>
     
@@ -152,6 +215,15 @@
       <pubDate>Fri, 07 Dec 2018 11:49:26 -0500</pubDate>
       
       <guid>https://kriszsandor.github.io/tags/wavenet/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Xgboost</title>
+      <link>https://kriszsandor.github.io/tags/xgboost/</link>
+      <pubDate>Wed, 12 Dec 2018 11:20:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/tags/xgboost/</guid>
       <description></description>
     </item>
     

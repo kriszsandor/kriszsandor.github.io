@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Xgboost on Krisztian Sandor&#39;s data science blog</title>
+    <link>https://kriszsandor.github.io/tags/xgboost/</link>
+    <description>Recent content in Xgboost on Krisztian Sandor&#39;s data science blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>&amp;copy; Krisztian Sandor, Budapest, Hungary</copyright>
+    <lastBuildDate>Wed, 12 Dec 2018 11:20:26 -0500</lastBuildDate>
+    
+	<atom:link href="https://kriszsandor.github.io/tags/xgboost/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Building a music recommendation engine</title>
+      <link>https://kriszsandor.github.io/posts/20181212_music_recommendation/</link>
+      <pubDate>Wed, 12 Dec 2018 11:20:26 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/posts/20181212_music_recommendation/</guid>
+      <description>This exercise is inspired by the Music Recommendation Challenge KAGGLE competition.
+The data was provided by KKBOX, an East-Asian music streaming service, similar to Spotify. It shows the first observable listening event for each unique user-song pair, together with potenitally useful Metadata. Besides the data provided, I sourced additional song and artist information via the API of Deezer music streaming service based on a &amp;lsquo;real-world&amp;rsquo; unique song identifier (ISRC id) in the KKBOX dataset</description>
+    </item>
+    
+  </channel>
+</rss>

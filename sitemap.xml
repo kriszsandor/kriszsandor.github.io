@@ -3,6 +3,11 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>https://kriszsandor.github.io/posts/20181212_music_recommendation/</loc>
+    <lastmod>2018-12-12T11:20:26-05:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://kriszsandor.github.io/posts/20181210_fletcher_blog/</loc>
     <lastmod>2018-12-11T01:00:26-05:00</lastmod>
   </url>
@@ -59,8 +64,20 @@
   </url>
   
   <url>
+    <loc>https://kriszsandor.github.io/tags/deezer/</loc>
+    <lastmod>2018-12-12T11:20:26-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>https://kriszsandor.github.io/tags/hierarchical/</loc>
     <lastmod>2018-12-11T01:00:26-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://kriszsandor.github.io/tags/kaggle/</loc>
+    <lastmod>2018-12-12T11:20:26-05:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -71,8 +88,26 @@
   </url>
   
   <url>
+    <loc>https://kriszsandor.github.io/tags/kkbox/</loc>
+    <lastmod>2018-12-12T11:20:26-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>https://kriszsandor.github.io/</loc>
-    <lastmod>2018-12-11T01:00:26-05:00</lastmod>
+    <lastmod>2018-12-12T11:20:26-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://kriszsandor.github.io/tags/logistic-regression/</loc>
+    <lastmod>2018-12-12T11:20:26-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://kriszsandor.github.io/tags/music/</loc>
+    <lastmod>2018-12-12T11:20:26-05:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -96,7 +131,19 @@
   
   <url>
     <loc>https://kriszsandor.github.io/posts/</loc>
-    <lastmod>2018-12-11T01:00:26-05:00</lastmod>
+    <lastmod>2018-12-12T11:20:26-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://kriszsandor.github.io/tags/random-forest/</loc>
+    <lastmod>2018-12-12T11:20:26-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://kriszsandor.github.io/tags/recommendation/</loc>
+    <lastmod>2018-12-12T11:20:26-05:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -139,6 +186,12 @@
   <url>
     <loc>https://kriszsandor.github.io/tags/wavenet/</loc>
     <lastmod>2018-12-07T11:49:26-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://kriszsandor.github.io/tags/xgboost/</loc>
+    <lastmod>2018-12-12T11:20:26-05:00</lastmod>
     <priority>0</priority>
   </url>
   
