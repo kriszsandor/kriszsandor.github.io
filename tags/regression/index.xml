@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Regression on Krisztian Sandor&#39;s data science blog</title>
+    <link>https://kriszsandor.github.io/tags/regression/</link>
+    <description>Recent content in Regression on Krisztian Sandor&#39;s data science blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <copyright>&amp;copy; Krisztian Sandor, Budapest, Hungary</copyright>
+    <lastBuildDate>Thu, 13 Dec 2018 12:45:00 -0500</lastBuildDate>
+    
+	<atom:link href="https://kriszsandor.github.io/tags/regression/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Regression analysis of apartment prices in Budapest, Hungary</title>
+      <link>https://kriszsandor.github.io/posts/20181213_apartment_price_regression/</link>
+      <pubDate>Thu, 13 Dec 2018 12:45:00 -0500</pubDate>
+      
+      <guid>https://kriszsandor.github.io/posts/20181213_apartment_price_regression/</guid>
+      <description>This project is about building a regression model to predict apartment prices in Budapest, Hungary based on physical, location-related and other features. This was the first standalone project I conducted in python during my bootcamp in Metis in New York - for this reason there are some natural limitations in the coding techniques.
+The data was scraped from ingatlan.com, a website serving arguably as the biggest real-estate selling and renting platform in Hungary.</description>
+    </item>
+    
+  </channel>
+</rss>

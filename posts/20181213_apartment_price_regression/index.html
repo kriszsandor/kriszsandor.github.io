@@ -1,0 +1,1288 @@
+<!DOCTYPE html> 
+<html lang="">
+<head prefix="og: http://ogp.me/ns#">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+  <meta property="og:title" content=" Regression analysis of apartment prices in Budapest, Hungary &middot;  Krisztian Sandor&#39;s data science blog" />
+  
+  <meta property="og:site_name" content="Krisztian Sandor&#39;s data science blog" />
+  <meta property="og:url" content="https://kriszsandor.github.io/posts/20181213_apartment_price_regression/" />
+  
+  
+    <meta property="og:type" content="article" />
+    
+    <meta property="og:article:published_time" content="2018-12-13T12:45:00-05:00" />
+    
+      <meta property="og:article:tag" content="real estate" />
+    
+      <meta property="og:article:tag" content="regression" />
+    
+      <meta property="og:article:tag" content="price" />
+    
+      <meta property="og:article:tag" content="sklearn" />
+    
+      <meta property="og:article:tag" content="beautifulsoup" />
+    
+      <meta property="og:article:tag" content="ingatlan.com" />
+    
+      <meta property="og:article:tag" content="regularization" />
+    
+      <meta property="og:article:tag" content="polynomial" />
+    
+  
+
+  <title>
+     Regression analysis of apartment prices in Budapest, Hungary &middot;  Krisztian Sandor&#39;s data science blog
+  </title>
+
+  <link rel="alternative stylesheet" href="https://kriszsandor.github.io/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://kriszsandor.github.io/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="https://kriszsandor.github.io/css/main.css" />
+  <link rel="stylesheet" href="https://kriszsandor.github.io/css/github.css" />
+  <link rel="stylesheet" href="https://kriszsandor.github.io/css/color-theme.css" />
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Sans+Pro:200,300,400" type="text/css">
+  <link rel="shortcut icon" href="https://kriszsandor.github.io/images/favicon.ico" />
+  <link rel="apple-touch-icon" href="https://kriszsandor.github.io/images/apple-touch-icon.png" />
+
+  <link rel="stylesheet" href="https://kriszsandor.github.io/css/custom.css" />
+
+  
+
+  
+
+  
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-130640046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-130640046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+  <script src="https://unpkg.com/vanilla-back-to-top@7.2.0/dist/vanilla-back-to-top.min.js"></script>
+
+  
+</head>
+<body>
+  <script>
+    addBackToTop({
+    backgroundColor: '#fff',
+    innerHTML: 'Back to Top',
+    textColor: '#333'
+    })
+  </script>
+  
+  <header class="global-header"  style="background-image:url(https://kriszsandor.github.io/images/background.png)">
+  
+    <section class="header-text">
+      <h1><a href="https://kriszsandor.github.io/">Krisztian Sandor&#39;s data science blog</a></h1>
+      
+        <h3 class="tag-line">
+          Using data science to solve business problems
+        </h3>
+      
+      
+        <a class="btn btn-default btn-home" href="https://kriszsandor.github.io/">
+          <i class="fa fa-angle-left" aria-hidden="true"></i>
+          &nbsp;Home
+        </a>
+      
+      
+      <div class="navbar-container">
+        
+          <a class="btn btn-default navbar-item" href="https://kriszsandor.github.io/pages/about">
+            About
+          </a>
+        
+      </div>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    </section>
+  </header>
+  <main class="container">
+
+
+
+<article>
+  <header class="article-title">
+    <h1 class="text-primary">Regression analysis of apartment prices in Budapest, Hungary</h1>
+  </header>
+  <div class="delimiter"></div>
+  <section>
+    
+
+<p>This <strong>project</strong> is about building a regression model to predict apartment prices in Budapest, Hungary based on physical, location-related and other features. This was the first standalone project I conducted in python during my bootcamp in Metis in New York - for this reason there are some natural limitations in the coding techniques.</p>
+
+<p>The <strong>data</strong> was scraped from <a href="http://ingatlan.com/">ingatlan.com</a>, a website serving arguably as the biggest real-estate selling and renting platform in Hungary.</p>
+
+<p>My <strong>objective</strong> utlizing webscraping and regression models was to predict apartment selling prices in Budapest, Hungary.</p>
+
+<p><img src="/Post_images/20181213_Apartment_price_regression/Slide_images/Slide02.png" alt="png" /></p>
+
+<hr />
+
+<h3 id="0-imports-and-helper-functions">0. Imports and helper functions</h3>
+
+<p>Below are the imports for the notebook and some helper functions utlized later in the code</p>
+
+<h5 id="imports">Imports</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Import all necessery python packages</span>
+<span style="color:#00f">import</span> <span style="color:#000">pandas</span> <span style="color:#00f">as</span> <span style="color:#000">pd</span>
+<span style="color:#00f">import</span> <span style="color:#000">numpy</span> <span style="color:#00f">as</span> <span style="color:#000">np</span>
+<span style="color:#00f">import</span> <span style="color:#000">matplotlib.pyplot</span> <span style="color:#00f">as</span> <span style="color:#000">plt</span>
+<span style="color:#00f">import</span> <span style="color:#000">matplotlib.dates</span> <span style="color:#00f">as</span> <span style="color:#000">mdates</span>
+<span style="color:#00f">import</span> <span style="color:#000">re</span>
+<span style="color:#00f">import</span> <span style="color:#000">requests</span> <span style="color:#00f">as</span> <span style="color:#000">req</span>
+<span style="color:#00f">from</span> <span style="color:#000">bs4</span> <span style="color:#00f">import</span> <span style="color:#000">BeautifulSoup</span>
+<span style="color:#00f">from</span> <span style="color:#000">urllib.parse</span> <span style="color:#00f">import</span> <span style="color:#000">urljoin</span>
+<span style="color:#00f">from</span> <span style="color:#000">selenium</span> <span style="color:#00f">import</span> <span style="color:#000">webdriver</span>
+<span style="color:#00f">import</span> <span style="color:#000">time</span>
+<span style="color:#00f">import</span> <span style="color:#000">geopy.distance</span>
+<span style="color:#00f">from</span> <span style="color:#000">geopy.geocoders</span> <span style="color:#00f">import</span> <span style="color:#000">Nominatim</span>
+<span style="color:#00f">from</span> <span style="color:#000">geopy.exc</span> <span style="color:#00f">import</span> <span style="color:#000">GeocoderTimedOut</span>
+<span style="color:#00f">import</span> <span style="color:#000">roman</span>
+<span style="color:#00f">import</span> <span style="color:#000">seaborn</span> <span style="color:#00f">as</span> <span style="color:#000">sns</span>
+<span style="color:#00f">from</span> <span style="color:#000">fake_useragent</span> <span style="color:#00f">import</span> <span style="color:#000">UserAgent</span>
+
+<span style="color:#00f">import</span> <span style="color:#000">patsy</span>
+<span style="color:#00f">import</span> <span style="color:#000">statsmodels.api</span> <span style="color:#00f">as</span> <span style="color:#000">sm</span>
+<span style="color:#00f">import</span> <span style="color:#000">statsmodels.formula.api</span> <span style="color:#00f">as</span> <span style="color:#000">smf</span>
+
+<span style="color:#00f">from</span> <span style="color:#000">sklearn.model_selection</span> <span style="color:#00f">import</span> <span style="color:#000">train_test_split</span>, <span style="color:#000">KFold</span>
+<span style="color:#00f">from</span> <span style="color:#000">sklearn.metrics</span> <span style="color:#00f">import</span> <span style="color:#000">mean_absolute_error</span>, <span style="color:#000">mean_squared_error</span>
+<span style="color:#00f">from</span> <span style="color:#000">sklearn.linear_model</span> <span style="color:#00f">import</span> <span style="color:#000">LinearRegression</span>, <span style="color:#000">Lasso</span>, <span style="color:#000">LassoCV</span>, <span style="color:#000">RidgeCV</span>, <span style="color:#000">Ridge</span>, <span style="color:#000">lars_path</span>
+<span style="color:#00f">from</span> <span style="color:#000">sklearn.preprocessing</span> <span style="color:#00f">import</span> <span style="color:#000">StandardScaler</span>, <span style="color:#000">PolynomialFeatures</span>
+<span style="color:#00f">from</span> <span style="color:#000">sklearn.pipeline</span> <span style="color:#00f">import</span> <span style="color:#000">Pipeline</span>
+
+<span style="color:#00f">from</span> <span style="color:#000">IPython.display</span> <span style="color:#00f">import</span> <span style="color:#000">Image</span>
+
+%<span style="color:#000">matplotlib</span> <span style="color:#000">inline</span></code></pre></div>
+<h5 id="load-list-of-pickled-dfs-and-concatanate-together">Load list of pickled dfs and concatanate together</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Load pickle files feeded as list from the same directory</span>
+<span style="color:#888;font-style:italic"># Return all pickles concatenated into single pandas dataframe</span>
+
+<span style="color:#00f">def</span> <span style="color:#000">loadpickles</span>(<span style="color:#000">file_list</span>):
+    <span style="color:#000">pickle_dfs</span> = []
+
+    <span style="color:#00f">for</span> <span style="color:#000">pickle</span> <span style="color:#00f">in</span> <span style="color:#000">file_list</span>:
+        <span style="color:#000">df</span> = <span style="color:#000">pd</span>.<span style="color:#000">read_pickle</span>(<span style="color:#000">pickle</span>)
+        <span style="color:#000">pickle_dfs</span>.<span style="color:#000">append</span>(<span style="color:#000">df</span>)
+
+    <span style="color:#000">df_concat</span> = <span style="color:#000">pd</span>.<span style="color:#000">concat</span>(<span style="color:#000">pickle_dfs</span>)
+    <span style="color:#00f">return</span> <span style="color:#000">df_concat</span></code></pre></div>
+<h5 id="calculate-the-distance-from-city-centre-for-a-given-address">Calculate the distance from city centre for a given address</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Returns the distance in meters of an address </span>
+<span style="color:#888;font-style:italic"># from Vorosmarty ter (the central square of Budapest)</span>
+
+<span style="color:#00f">def</span> <span style="color:#000">distance_from_centre</span>(<span style="color:#000">address</span>):
+    <span style="color:#00f">if</span> <span style="color:#000">address</span> != <span style="color:#000">False</span>:
+        <span style="color:#00f">try</span>:
+            <span style="color:#000">geolocator</span> = <span style="color:#000">Nominatim</span>(<span style="color:#000">user_agent</span>=<span style="color:#5a2">&#39;geopy.geocoders.options.default_user_agent&#39;</span>)
+            <span style="color:#000">location_ingatlan</span> = <span style="color:#000">geolocator</span>.<span style="color:#000">geocode</span>(<span style="color:#000">address</span>)
+            <span style="color:#888;font-style:italic">#location_POI = geolocator.geocode(&#34;Vorosmarty ter, V.kerület&#34;)</span>
+            <span style="color:#000">coords_ingatlan</span> = (<span style="color:#000">location_ingatlan</span>.<span style="color:#000">latitude</span>, <span style="color:#000">location_ingatlan</span>.<span style="color:#000">longitude</span>)
+            <span style="color:#888;font-style:italic">#coords_POI = (location_POI.latitude, location_POI.longitude)</span>
+            <span style="color:#000">coords_POI</span> = (<span style="color:#3af">47.4960918</span>, <span style="color:#3af">19.050927</span>) <span style="color:#888;font-style:italic"># to make the code quicker, I have hard-coded the coordinates for the central square</span>
+
+            <span style="color:#00f">return</span>(<span style="color:#000">geopy</span>.<span style="color:#000">distance</span>.<span style="color:#000">vincenty</span>(<span style="color:#000">coords_ingatlan</span>, <span style="color:#000">coords_POI</span>).<span style="color:#000">meters</span>)
+        
+        <span style="color:#888;font-style:italic"># There are lots of errors when this is running, this except tries to catch some of these errors</span>
+        <span style="color:#00f">except</span>:
+            <span style="color:#00f">return</span> <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+    <span style="color:#00f">else</span>:
+        <span style="color:#00f">return</span> <span style="color:#000">np</span>.<span style="color:#000">NaN</span></code></pre></div>
+<h5 id="check-if-an-address-exists-in-the-nominatim-package">Check if an address exists in the Nominatim package</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Returns True if an address exists, False if does not exist</span>
+
+<span style="color:#00f">def</span> <span style="color:#000">address_exists</span>(<span style="color:#000">address</span>):
+    <span style="color:#00f">try</span>:
+        <span style="color:#000">geolocator</span> = <span style="color:#000">Nominatim</span>(<span style="color:#000">user_agent</span>=<span style="color:#5a2">&#39;geopy.geocoders.options.default_user_agent&#39;</span>)
+        <span style="color:#000">location_POI</span> = <span style="color:#000">geolocator</span>.<span style="color:#000">geocode</span>(<span style="color:#000">address</span>)
+        <span style="color:#00f">return</span> <span style="color:#000">False</span> <span style="color:#00f">if</span> <span style="color:#000">location_POI</span> <span style="color:#00f">is</span> <span style="color:#000">None</span> <span style="color:#00f">else</span> <span style="color:#000">True</span>
+    <span style="color:#00f">except</span>: <span style="color:#888;font-style:italic">#GeocoderTimedOut as e:</span>
+        <span style="color:#00f">return</span> <span style="color:#000">False</span></code></pre></div>
+<p><img src="/Post_images/20181213_Apartment_price_regression/Slide_images/Slide04.png" alt="png" /></p>
+
+<h3 id="1-scrape-ingatlan-com-for-apartments">1. Scrape ingatlan.com for apartments</h3>
+
+<p>The below url leads to an comprehensive listing of all available apartments in Budapest. The code opens this url and takes a snapshot of each apartment&rsquo;s summary page (i.e. the page with the search results), then opens each apartment&rsquo;s detailed page (i.e. where all details for a single apartment is available) and downloads all seemingly important information.</p>
+
+<p><img src="/Post_images/20181213_Apartment_price_regression/Slide_images/Slide05.png" alt="png" /></p>
+
+<h5 id="initiate-run">Initiate run</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Initial search url to be scraped (filter: all appartments in Budapest, Hungary)</span>
+<span style="color:#000">url</span> = <span style="color:#5a2">&#39;https://ingatlan.com/szukites/elado+lakas+budapest&#39;</span>
+
+<span style="color:#888;font-style:italic"># starting from 1st apartment on the url and downloading data for all</span>
+<span style="color:#000">df_import</span> = <span style="color:#000">ingatlan_todataframe</span>(<span style="color:#000">url</span>, <span style="color:#3af">1</span>, <span style="color:#3af">1</span>)
+<span style="color:#000">df_import</span>.<span style="color:#000">to_pickle</span>(<span style="color:#5a2">&#39;all_pages_ingatlan.pkl&#39;</span>)</code></pre></div>
+<h5 id="scrape-url-as-beautiful-soup-object-run-parser">Scrape url as (beautiful-)soup object run parser</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> <span style="color:#000">ingatlan_todataframe</span>(<span style="color:#000">url</span>, <span style="color:#000">starting_page</span>, <span style="color:#000">run_count</span>):
+    
+    <span style="color:#888;font-style:italic"># Creates fake header and useragent for scraping</span>
+    <span style="color:#000">ua</span> = <span style="color:#000">UserAgent</span>()
+    <span style="color:#000">header</span> = {
+        <span style="color:#5a2">&#39;User-Agent&#39;</span>: <span style="color:#000">ua</span>.<span style="color:#000">random</span>
+    }
+    
+    <span style="color:#888;font-style:italic"># Ingatlan.com accepts max of 20 real estate listings per page</span>
+    <span style="color:#000">max_listing_per_page</span> = <span style="color:#3af">20</span>
+    <span style="color:#000">page_str</span> = <span style="color:#5a2">&#39;?page=&#39;</span>
+    
+    <span style="color:#888;font-style:italic"># Scrapes listing page=1 with 20 listings to start with</span>
+    <span style="color:#000">r_ingatlan</span> = <span style="color:#000">req</span>.<span style="color:#000">get</span>(<span style="color:#000">url</span>, <span style="color:#000">headers</span>=<span style="color:#000">header</span>)
+    <span style="color:#000">soup</span> = <span style="color:#000">BeautifulSoup</span>(<span style="color:#000">r_ingatlan</span>.<span style="color:#000">content</span>,<span style="color:#5a2">&#34;lxml&#34;</span>)
+    
+    <span style="color:#888;font-style:italic"># Takes the counter from the listing page showing the number of total results of search url</span>
+    <span style="color:#000">listing_count</span> = <span style="color:#000">int</span>(<span style="color:#000">soup</span>.<span style="color:#000">find</span>(<span style="color:#5a2">&#39;div&#39;</span>, {<span style="color:#5a2">&#39;class&#39;</span>:<span style="color:#5a2">&#39;results__number&#39;</span>}).<span style="color:#000">attrs</span>[<span style="color:#5a2">&#39;data-listings-count&#39;</span>].<span style="color:#000">replace</span>(<span style="color:#5a2">&#39; &#39;</span>,<span style="color:#5a2">&#39;&#39;</span>))
+    
+    <span style="color:#888;font-style:italic"># Initiates list of dfs&#39; and df_backups&#39; containing df of the results from each individual listing page</span>
+    <span style="color:#000">dfs</span> = []
+    <span style="color:#000">df_backups</span> = []
+    
+    <span style="color:#888;font-style:italic"># Loops thru each page of the search results</span>
+    <span style="color:#00f">for</span> <span style="color:#000">page_num</span> <span style="color:#00f">in</span> <span style="color:#000">range</span>(<span style="color:#000">starting_page</span>,(<span style="color:#000">listing_count</span> // <span style="color:#000">max_listing_per_page</span>)+<span style="color:#3af">1</span>):
+        
+        <span style="color:#888;font-style:italic"># Creates fake header and useragent for scraping</span>
+        <span style="color:#000">ua</span> = <span style="color:#000">UserAgent</span>()
+        <span style="color:#000">header</span> = {
+            <span style="color:#5a2">&#39;User-Agent&#39;</span>: <span style="color:#000">ua</span>.<span style="color:#000">random</span>
+        }
+        
+        <span style="color:#888;font-style:italic"># Compiles each page&#39;s url and opens, scrapes using beautifulsoup</span>
+        <span style="color:#000">listing_url_page</span> = <span style="color:#000">urljoin</span>(<span style="color:#000">url</span>,<span style="color:#000">page_str</span>) + <span style="color:#000">str</span>(<span style="color:#000">page_num</span>)
+        <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Scraping:&#39;</span>,<span style="color:#000">listing_url_page</span>)
+        <span style="color:#000">r_ingatlan</span> = <span style="color:#000">req</span>.<span style="color:#000">get</span>(<span style="color:#000">listing_url_page</span>, <span style="color:#000">headers</span>=<span style="color:#000">header</span>)
+        <span style="color:#000">soup</span> = <span style="color:#000">BeautifulSoup</span>(<span style="color:#000">r_ingatlan</span>.<span style="color:#000">content</span>,<span style="color:#5a2">&#34;lxml&#34;</span>)
+        
+        <span style="color:#888;font-style:italic"># Collects all information to be found on each page of the search results and appends to dfs list</span>
+        <span style="color:#000">dfs</span>.<span style="color:#000">append</span>(<span style="color:#000">ingatlan_parser</span>(<span style="color:#000">soup</span>,<span style="color:#000">run_count</span>,<span style="color:#000">page_num</span>)) <span style="color:#888;font-style:italic"># &lt;-- runs the below parser function</span>
+        
+        <span style="color:#888;font-style:italic"># Save backup per each 50 pages and save to pickle: backup_[pagenum].pkl</span>
+        <span style="color:#00f">if</span> <span style="color:#000">page_num</span> % <span style="color:#3af">10</span> == <span style="color:#3af">0</span>:
+            <span style="color:#888;font-style:italic">#break #remove for full run, otherwise only running page=1</span>
+            <span style="color:#000">df_backups</span> = <span style="color:#000">dfs</span>.<span style="color:#000">copy</span>()
+            <span style="color:#000">df_backup</span> = <span style="color:#000">pd</span>.<span style="color:#000">concat</span>(<span style="color:#000">df_backups</span>)
+            <span style="color:#000">path</span> = <span style="color:#5a2">&#39;backup_&#39;</span> + <span style="color:#000">str</span>(<span style="color:#000">page_num</span>) + <span style="color:#5a2">&#39;.pkl&#39;</span>
+            <span style="color:#000">df_backup</span>.<span style="color:#000">to_pickle</span>(<span style="color:#000">path</span>)
+            <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Saved backup:&#39;</span>, <span style="color:#000">path</span>)
+            <span style="color:#00f">del</span> <span style="color:#000">df_backup</span>
+            <span style="color:#00f">del</span> <span style="color:#000">df_backups</span>
+            <span style="color:#00f">del</span> <span style="color:#000">path</span>
+    
+    <span style="color:#888;font-style:italic"># Once all pages have been scraped concatenates all individual page dfs into a single df and returns df as result</span>
+    <span style="color:#000">df_import</span> = <span style="color:#000">pd</span>.<span style="color:#000">concat</span>(<span style="color:#000">dfs</span>)
+    
+    <span style="color:#00f">return</span>(<span style="color:#000">df_import</span>)</code></pre></div>
+<h5 id="put-the-scraped-soup-object-into-dataframe-run-within-above-function">Put the scraped soup object into dataframe (run within above function)</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Gets soup object from real estate listing page and scrape all infos from there and detailed pages</span>
+<span style="color:#888;font-style:italic"># Returns df of all real estates on listing page</span>
+<span style="color:#00f">def</span> <span style="color:#000">ingatlan_parser</span>(<span style="color:#000">soup</span>, <span style="color:#000">run_count</span>, <span style="color:#000">where_am_i</span>):
+
+    <span style="color:#000">dfs</span> = []
+    <span style="color:#000">urls</span> = []
+    <span style="color:#000">i</span> = <span style="color:#3af">1</span>
+    <span style="color:#000">error</span> = <span style="color:#000">False</span>
+    <span style="color:#888;font-style:italic"># Check if error handler has rerun the code already or this is the first run</span>
+    
+    <span style="color:#888;font-style:italic"># Scrape all available infos from the real estate list page info-card</span>
+    <span style="color:#888;font-style:italic">#for div in soup.find_all(&#39;div&#39;, {&#39;class&#39;:&#39;listing js-listing &#39;}):</span>
+    <span style="color:#000">listings</span> = <span style="color:#000">soup</span>.<span style="color:#000">find_all</span>(<span style="color:#5a2">&#39;div&#39;</span>, <span style="color:#000">class_</span>=<span style="color:#5a2">&#39;listing js-listing &#39;</span>) 
+    <span style="color:#00f">for</span> <span style="color:#000">div</span> <span style="color:#00f">in</span> <span style="color:#000">listings</span>:
+        
+        <span style="color:#888;font-style:italic"># Initiate feature variables, left as NaN for those not existent on detailed real estate page</span>
+        <span style="color:#000">ingatlan_id</span> = <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+        <span style="color:#000">ingatlan_size</span> = <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+        <span style="color:#000">ingatlan_price</span> = <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+        <span style="color:#000">ingatlan_rooms</span> = <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+        <span style="color:#000">ingatlan_floor</span> = <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+        <span style="color:#000">ingatlan_address_withdistrict</span> = <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+        <span style="color:#000">ingatlan_quality</span> = <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+        <span style="color:#000">ingatlan_yearbuilt</span> = <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+        <span style="color:#000">ingatlan_floorsinbuilding</span> = <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+        <span style="color:#000">ingatlan_lift</span> = <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+        <span style="color:#000">ingatlan_orientation</span> = <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+        <span style="color:#000">ingatlan_view</span> = <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+        <span style="color:#000">ingatlan_metro</span> = <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+        
+        <span style="color:#888;font-style:italic"># Error handling: poorly entered data causes errors, in this case return np.NaN values</span>
+        <span style="color:#00f">try</span>:
+            <span style="color:#888;font-style:italic"># Read address from listing page</span>
+            <span style="color:#000">address</span> = <span style="color:#000">div</span>.<span style="color:#000">find</span>(<span style="color:#5a2">&#39;div&#39;</span>, {<span style="color:#5a2">&#39;class&#39;</span>:<span style="color:#5a2">&#39;listing__address&#39;</span>}).<span style="color:#000">text</span>
+            <span style="color:#000">ingatlan_address_withdistrict</span> = <span style="color:#000">False</span> <span style="color:#00f">if</span> <span style="color:#000">address_exists</span>(<span style="color:#000">address</span>) == <span style="color:#000">False</span> <span style="color:#00f">else</span> <span style="color:#000">address</span>
+            <span style="color:#000">ingatlan_id</span> = <span style="color:#000">div</span>.<span style="color:#000">attrs</span>[<span style="color:#5a2">&#39;data-id&#39;</span>]
+
+            <span style="color:#888;font-style:italic"># Navigate to detailed info of the real estate</span>
+            <span style="color:#000">BASE_URL</span> = <span style="color:#5a2">&#39;https://ingatlan.com/&#39;</span>
+            <span style="color:#000">url_ingatlan</span> = <span style="color:#000">urljoin</span>(<span style="color:#000">BASE_URL</span>, <span style="color:#000">ingatlan_id</span>)
+
+            <span style="color:#888;font-style:italic"># Print listing page url being scraped</span>
+            <span style="color:#888;font-style:italic">#print(&#39;Scraping:&#39;,url_ingatlan)</span>
+            
+            <span style="color:#888;font-style:italic"># Creates fake header and useragent for scraping</span>
+            <span style="color:#000">ua</span> = <span style="color:#000">UserAgent</span>()
+            <span style="color:#000">header</span> = {
+                <span style="color:#5a2">&#39;User-Agent&#39;</span>: <span style="color:#000">ua</span>.<span style="color:#000">random</span>
+            }
+            
+            <span style="color:#888;font-style:italic"># Call listing page and pull html into soup_ingatlan &#39;beautifulsoup&#39; object</span>
+            <span style="color:#000">r_ingatlan</span> = <span style="color:#000">req</span>.<span style="color:#000">get</span>(<span style="color:#000">url_ingatlan</span>, <span style="color:#000">headers</span>=<span style="color:#000">header</span>)
+            <span style="color:#000">soup_ingatlan</span> = <span style="color:#000">BeautifulSoup</span>(<span style="color:#000">r_ingatlan</span>.<span style="color:#000">content</span>,<span style="color:#5a2">&#34;lxml&#34;</span>)
+
+            <span style="color:#888;font-style:italic"># Read all required info from real estate detailed page (those without IDs)      </span>
+            <span style="color:#888;font-style:italic"># Loop thru each table with feature data (has no IDs)</span>
+            <span style="color:#00f">for</span> <span style="color:#000">table</span> <span style="color:#00f">in</span> (<span style="color:#000">soup_ingatlan</span>
+                       .<span style="color:#000">find</span>(<span style="color:#5a2">&#39;div&#39;</span>, {<span style="color:#5a2">&#39;class&#39;</span>:<span style="color:#5a2">&#39;card details&#39;</span>})
+                       .<span style="color:#000">find</span>(<span style="color:#5a2">&#39;div&#39;</span>, {<span style="color:#5a2">&#39;class&#39;</span>:<span style="color:#5a2">&#39;paramterers&#39;</span>})
+                       .<span style="color:#000">find_all</span>(<span style="color:#5a2">&#39;table&#39;</span>)
+                      ):
+
+                <span style="color:#888;font-style:italic"># Loop thru cells of each table</span>
+                <span style="color:#00f">for</span> <span style="color:#000">td</span> <span style="color:#00f">in</span> <span style="color:#000">table</span>.<span style="color:#000">find_all</span>(<span style="color:#5a2">&#39;td&#39;</span>):
+
+                    <span style="color:#888;font-style:italic"># Once flag is reached fill-in flag</span>
+                    <span style="color:#00f">if</span> <span style="color:#000">td</span>.<span style="color:#000">text</span> == <span style="color:#5a2">&#39;Ingatlan állapota&#39;</span>:
+                        <span style="color:#000">ingatlan_quality</span> = <span style="color:#000">td</span>.<span style="color:#000">findNextSibling</span>().<span style="color:#000">text</span>
+                    <span style="color:#00f">if</span> <span style="color:#000">td</span>.<span style="color:#000">text</span> == <span style="color:#5a2">&#39;Építés éve&#39;</span>:
+                        <span style="color:#000">ingatlan_yearbuilt</span> = <span style="color:#000">td</span>.<span style="color:#000">findNextSibling</span>().<span style="color:#000">text</span>
+                    <span style="color:#00f">if</span> <span style="color:#000">td</span>.<span style="color:#000">text</span> == <span style="color:#5a2">&#39;Emelet&#39;</span>:
+                        <span style="color:#000">ingatlan_floor</span> = <span style="color:#000">td</span>.<span style="color:#000">findNextSibling</span>().<span style="color:#000">text</span>
+                    <span style="color:#00f">if</span> <span style="color:#000">td</span>.<span style="color:#000">text</span> == <span style="color:#5a2">&#39;Épület szintjei&#39;</span>:
+                        <span style="color:#000">ingatlan_floorsinbuilding</span> = <span style="color:#000">td</span>.<span style="color:#000">findNextSibling</span>().<span style="color:#000">text</span>
+                    <span style="color:#00f">if</span> <span style="color:#000">td</span>.<span style="color:#000">text</span> == <span style="color:#5a2">&#39;Lift&#39;</span>:
+                        <span style="color:#000">ingatlan_lift</span> = <span style="color:#000">td</span>.<span style="color:#000">findNextSibling</span>().<span style="color:#000">text</span>
+                    <span style="color:#00f">if</span> <span style="color:#000">td</span>.<span style="color:#000">text</span> == <span style="color:#5a2">&#39;Tájolás&#39;</span>:
+                        <span style="color:#000">ingatlan_orientation</span> = <span style="color:#000">td</span>.<span style="color:#000">findNextSibling</span>().<span style="color:#000">text</span>
+                    <span style="color:#00f">if</span> <span style="color:#000">td</span>.<span style="color:#000">text</span> == <span style="color:#5a2">&#39;Kilátás&#39;</span>:
+                        <span style="color:#000">ingatlan_view</span> = <span style="color:#000">td</span>.<span style="color:#000">findNextSibling</span>().<span style="color:#000">text</span>
+
+            <span style="color:#888;font-style:italic">#Find which public transport is nearby the real estate (if any)</span>
+            <span style="color:#000">ingatlan_metro</span> = <span style="color:#000">True</span> <span style="color:#00f">if</span> (<span style="color:#000">soup_ingatlan</span>.<span style="color:#000">find</span>(<span style="color:#5a2">&#39;a&#39;</span>, <span style="color:#000">class_</span>=<span style="color:#5a2">&#39;subway&#39;</span>)) <span style="color:#00f">is</span> <span style="color:#00f">not</span> <span style="color:#000">None</span> <span style="color:#00f">else</span> <span style="color:#000">False</span>
+
+            <span style="color:#888;font-style:italic"># If address was not in title, do second try to extract from &#39;long description&#39;</span>
+            <span style="color:#00f">if</span> <span style="color:#000">ingatlan_address_withdistrict</span> == <span style="color:#000">False</span>:
+                <span style="color:#000">long_decription</span> = <span style="color:#000">soup_ingatlan</span>.<span style="color:#000">find</span>(<span style="color:#5a2">&#39;div&#39;</span>, {<span style="color:#5a2">&#39;class&#39;</span>:<span style="color:#5a2">&#39;long-description&#39;</span>}).<span style="color:#000">text</span>.<span style="color:#000">strip</span>()
+                <span style="color:#000">ingatlan_address_withdistrict</span> = <span style="color:#000">re</span>.<span style="color:#000">search</span>(<span style="color:#5a2">r</span><span style="color:#5a2">&#39;\w*\s*[uU]tca&#39;</span>, <span style="color:#000">long_decription</span>)
+                <span style="color:#00f">if</span> <span style="color:#000">ingatlan_address_withdistrict</span> <span style="color:#00f">is</span> <span style="color:#00f">not</span> <span style="color:#000">None</span>:
+                    <span style="color:#00f">try</span>:
+                        <span style="color:#000">ingatlan_address_withdistrict</span> = <span style="color:#000">ingatlan_address_withdistrict</span>.<span style="color:#000">group</span>()[<span style="color:#3af">0</span>]
+                    <span style="color:#00f">except</span>:
+                        <span style="color:#000">ingatlan_address_withdistrict</span> = <span style="color:#000">False</span>
+                <span style="color:#00f">else</span>:
+                    <span style="color:#000">ingatlan_address_withdistrict</span> = <span style="color:#000">False</span>
+
+            <span style="color:#888;font-style:italic"># Read all required info from real estate detailed page (those with IDs)</span>
+            <span style="color:#888;font-style:italic">#ingatlan_id = soup_ingatlan.find(&#39;b&#39;, {&#39;class&#39;:&#39;listing-id&#39;}).text #.split()[1] # Decomissioned - not useful</span>
+            <span style="color:#000">ingatlan_size</span> = <span style="color:#000">soup_ingatlan</span>.<span style="color:#000">find</span>(<span style="color:#5a2">&#39;div&#39;</span>, {<span style="color:#5a2">&#39;class&#39;</span>:<span style="color:#5a2">&#39;parameter parameter-area-size&#39;</span>}).<span style="color:#000">find</span>(<span style="color:#5a2">&#39;span&#39;</span>, {<span style="color:#5a2">&#39;class&#39;</span>:<span style="color:#5a2">&#39;parameter-value&#39;</span>}).<span style="color:#000">text</span>
+            <span style="color:#000">ingatlan_price</span> = <span style="color:#000">soup_ingatlan</span>.<span style="color:#000">find</span>(<span style="color:#5a2">&#39;div&#39;</span>, {<span style="color:#5a2">&#39;class&#39;</span>:<span style="color:#5a2">&#39;parameter parameter-price&#39;</span>}).<span style="color:#000">find</span>(<span style="color:#5a2">&#39;span&#39;</span>, {<span style="color:#5a2">&#39;class&#39;</span>:<span style="color:#5a2">&#39;parameter-value&#39;</span>}).<span style="color:#000">text</span>
+            <span style="color:#000">ingatlan_rooms</span> = <span style="color:#000">soup_ingatlan</span>.<span style="color:#000">find</span>(<span style="color:#5a2">&#39;div&#39;</span>, {<span style="color:#5a2">&#39;class&#39;</span>:<span style="color:#5a2">&#39;parameter parameter-room&#39;</span>}).<span style="color:#000">find</span>(<span style="color:#5a2">&#39;span&#39;</span>, {<span style="color:#5a2">&#39;class&#39;</span>:<span style="color:#5a2">&#39;parameter-value&#39;</span>}).<span style="color:#000">text</span>
+            <span style="color:#000">ingatlan_newlybuilt</span> = <span style="color:#000">soup_ingatlan</span>.<span style="color:#000">find</span>(<span style="color:#5a2">&#39;span&#39;</span>, {<span style="color:#5a2">&#39;class&#39;</span>:<span style="color:#5a2">&#39;label label--newly-built&#39;</span>})
+            <span style="color:#888;font-style:italic">#ingatlan_district = soup_ingatlan.find(&#39;div&#39;, {&#39;id&#39;:&#39;map-nav-links&#39;}).find_all(&#39;a&#39;)[1].text</span>
+            <span style="color:#888;font-style:italic">#ingatlan_address = soup_ingatlan.find(&#39;a&#39;, {&#39;class&#39;:&#39;map-link is-map-link-active&#39;}).text #decommissioned due to speed limitations</span>
+        
+        <span style="color:#888;font-style:italic"># If poor data source quality return np.NaN for the appartment values</span>
+        <span style="color:#00f">except</span>:
+            <span style="color:#00f">pass</span>
+            <span style="color:#000">error</span> = <span style="color:#000">True</span>
+        
+        <span style="color:#888;font-style:italic"># Create numpy array from all the avaiable infos on the real estate</span>
+        <span style="color:#000">appartment</span> = <span style="color:#000">np</span>.<span style="color:#000">array</span>([
+            <span style="color:#000">ingatlan_id</span>,
+            <span style="color:#000">ingatlan_size</span>,
+            <span style="color:#000">ingatlan_price</span>,
+            <span style="color:#000">ingatlan_rooms</span>,
+            <span style="color:#000">ingatlan_floor</span>,
+            <span style="color:#000">ingatlan_address_withdistrict</span>,
+            <span style="color:#000">distance_from_centre</span>(<span style="color:#000">ingatlan_address_withdistrict</span>), <span style="color:#888;font-style:italic"># + &#39; &#39; + ingatlan_district),</span>
+            <span style="color:#000">ingatlan_quality</span>,
+            <span style="color:#000">ingatlan_yearbuilt</span>,
+            <span style="color:#000">ingatlan_floorsinbuilding</span>,
+            <span style="color:#000">ingatlan_lift</span>,
+            <span style="color:#000">ingatlan_orientation</span>,
+            <span style="color:#000">ingatlan_view</span>,
+            <span style="color:#000">ingatlan_metro</span>
+                              ])
+        
+        <span style="color:#888;font-style:italic"># Reshape array to fit pandas structure</span>
+        <span style="color:#000">appartment</span> = <span style="color:#000">appartment</span>.<span style="color:#000">reshape</span>(<span style="color:#3af">1</span>,<span style="color:#000">appartment</span>.<span style="color:#000">size</span>)
+        
+        <span style="color:#888;font-style:italic"># Create pandas df from real estate numpy array</span>
+        <span style="color:#000">df_appartment</span> = <span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">appartment</span>, <span style="color:#000">columns</span> = [
+            <span style="color:#5a2">&#39;ID&#39;</span>,
+            <span style="color:#5a2">&#39;SIZE&#39;</span>,
+            <span style="color:#5a2">&#39;PRICE&#39;</span>,
+            <span style="color:#5a2">&#39;ROOMS&#39;</span>,
+            <span style="color:#5a2">&#39;FLOOR&#39;</span>,
+            <span style="color:#5a2">&#39;ADDRESS&#39;</span>, 
+            <span style="color:#5a2">&#39;DISTANCE_FROM_CENTRE&#39;</span>,
+            <span style="color:#5a2">&#39;QUALITY&#39;</span>,
+            <span style="color:#5a2">&#39;YEAR_BUILT&#39;</span>,
+            <span style="color:#5a2">&#39;FLOORS_IN_BUILDING&#39;</span>,
+            <span style="color:#5a2">&#39;LIFT&#39;</span>,
+            <span style="color:#5a2">&#39;ORIENTATION&#39;</span>,
+            <span style="color:#5a2">&#39;VIEW&#39;</span>,
+            <span style="color:#5a2">&#39;METRO_NEARBY&#39;</span>
+        ])
+        
+        <span style="color:#888;font-style:italic"># Append real estate df to list with all previous dfs</span>
+        <span style="color:#000">dfs</span>.<span style="color:#000">append</span>(<span style="color:#000">df_appartment</span>)
+        <span style="color:#888;font-style:italic">#break #remove for full run</span>
+        
+        <span style="color:#00f">if</span> <span style="color:#000">error</span> == <span style="color:#000">True</span>:
+            <span style="color:#888;font-style:italic">#print(&#39;Error avoided at:\n&#39;, appartment)</span>
+            <span style="color:#000">error</span> = <span style="color:#000">False</span>
+        
+        <span style="color:#888;font-style:italic">#i += 1</span>
+        <span style="color:#888;font-style:italic">#if (i % 10 == 0):</span>
+            <span style="color:#888;font-style:italic">#print(&#39;Waiting 2 seconds...&#39;)</span>
+            <span style="color:#888;font-style:italic">#time.sleep(2)</span>
+            <span style="color:#888;font-style:italic">#print(&#39;Continuing...&#39;)</span>
+        
+    <span style="color:#888;font-style:italic"># Try to concat together all dfs in appended list - sometimes failes due to unclear reasons in this case retry once</span>
+    <span style="color:#00f">try</span>:
+        <span style="color:#000">df</span> = <span style="color:#000">pd</span>.<span style="color:#000">concat</span>(<span style="color:#000">dfs</span>)
+        <span style="color:#000">run_count</span> = <span style="color:#3af">1</span>
+        <span style="color:#000">df</span>.<span style="color:#000">set_index</span>(<span style="color:#5a2">&#39;ID&#39;</span>,<span style="color:#000">inplace</span>=<span style="color:#000">True</span>)
+        <span style="color:#00f">return</span> <span style="color:#000">df</span>
+    
+    <span style="color:#888;font-style:italic"># Re-run 5 times to try again, after that raise error and tell which df caused the error</span>
+    <span style="color:#00f">except</span>:
+        <span style="color:#00f">if</span> <span style="color:#000">run_count</span> &lt; <span style="color:#3af">6</span>:
+            <span style="color:#000">re_starting_page</span> = <span style="color:#000">where_am_i</span> - ((<span style="color:#000">where_am_i</span> % <span style="color:#3af">10</span>) <span style="color:#00f">if</span> <span style="color:#000">where_am_i</span> % <span style="color:#3af">10</span> != <span style="color:#3af">0</span> <span style="color:#00f">else</span> <span style="color:#3af">10</span>) + <span style="color:#3af">1</span>
+            <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Re-running starting from:&#39;</span>, <span style="color:#000">re_starting_page</span>)
+            <span style="color:#000">ingatlan_todataframe</span>(<span style="color:#000">url</span>, <span style="color:#000">re_starting_page</span>, <span style="color:#000">run_count</span> + <span style="color:#3af">1</span>)
+        <span style="color:#00f">else</span>:
+            <span style="color:#00f">raise</span> <span style="color:#000">ValueError</span>(<span style="color:#5a2">&#39;Cannot concatenate this df:&#39;</span>, <span style="color:#000">dfs</span>)</code></pre></div>
+<h3 id="2-clean-the-scraped-data">2. Clean the scraped data</h3>
+
+<p>Below I am cleaning the data and also creating meaningful column names later to be used a regression features</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Cleans dataframe collected from ingatlan.com to be ready for regression analysis</span>
+
+<span style="color:#000">df</span> = <span style="color:#000">df_import</span>.<span style="color:#000">copy</span>()
+
+<span style="color:#888;font-style:italic"># Once apartment data is saved (e.g. partial data to be extended) the below can import it and append together</span>
+<span style="color:#888;font-style:italic">#df = loadpickles([&#39;backup_1-30.pkl&#39;,&#39;backup_31-70.pkl&#39;,&#39;backup_71-100.pkl&#39;,&#39;backup_101-170.pkl&#39;,&#39;backup_171-190.pkl&#39;,&#39;backup_191-250.pkl&#39;,&#39;backup_251-270.pkl&#39;,&#39;backup_271-330.pkl&#39;])</span>
+<span style="color:#888;font-style:italic">#df = loadpickles([&#39;backup_101-170.pkl&#39;,&#39;backup_171-190.pkl&#39;,&#39;backup_191-250.pkl&#39;,&#39;backup_251-270.pkl&#39;,&#39;backup_271-330.pkl&#39;,&#39;backup_331-340.pkl&#39;,&#39;backup_341-380.pkl&#39;,&#39;backup_381-400.pkl&#39;,&#39;backup_401-470.pkl&#39;,&#39;backup_471-490.pkl&#39;,&#39;backup_491-510.pkl&#39;,&#39;backup_511-520.pkl&#39;,&#39;backup_521-530.pkl&#39;,&#39;backup_531-580.pkl&#39;,&#39;backup_581-600.pkl&#39;,&#39;backup_601-610.pkl&#39;,&#39;backup_611-630.pkl&#39;,&#39;backup_671-690.pkl&#39;,&#39;backup_691-730.pkl&#39;,&#39;backup_741-860.pkl&#39;,&#39;backup_871-910.pkl&#39;,&#39;backup_911-930.pkl&#39;,&#39;backup_931-940.pkl&#39;,&#39;backup_941-960.pkl&#39;,&#39;backup_961-1090.pkl&#39;])</span>
+
+<span style="color:#888;font-style:italic"># Cleaning out df</span>
+<span style="color:#000">df</span>.<span style="color:#000">reset_index</span>(<span style="color:#000">inplace</span>=<span style="color:#000">True</span>)
+<span style="color:#000">df</span>.<span style="color:#000">drop_duplicates</span>([<span style="color:#5a2">&#39;ID&#39;</span>], <span style="color:#000">inplace</span>=<span style="color:#000">True</span>)
+
+<span style="color:#888;font-style:italic"># Makings sure NaN everywhere with missing data</span>
+<span style="color:#888;font-style:italic">#df.loc[df[&#39;FLOORS_IN_BUILDING&#39;] == &#39;nincs megadva&#39;,&#39;FLOORS_IN_BUILDING&#39;] = np.NaN</span>
+<span style="color:#000">df</span>.<span style="color:#000">loc</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;FLOOR&#39;</span>] == <span style="color:#5a2">&#39;nincs megadva&#39;</span>,<span style="color:#5a2">&#39;FLOOR&#39;</span>] = <span style="color:#000">np</span>.<span style="color:#000">NaN</span>
+<span style="color:#000">df</span>.<span style="color:#000">loc</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;ORIENTATION&#39;</span>] == <span style="color:#5a2">&#39;nincs megadva&#39;</span>,<span style="color:#5a2">&#39;ORIENTATION&#39;</span>] = <span style="color:#000">np</span>.<span style="color:#000">nan</span>
+<span style="color:#000">df</span>.<span style="color:#000">loc</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;VIEW&#39;</span>] == <span style="color:#5a2">&#39;nincs megadva&#39;</span>,<span style="color:#5a2">&#39;VIEW&#39;</span>] = <span style="color:#000">np</span>.<span style="color:#000">nan</span>
+<span style="color:#000">df</span>.<span style="color:#000">loc</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;QUALITY&#39;</span>] == <span style="color:#5a2">&#39;nincs megadva&#39;</span>,<span style="color:#5a2">&#39;QUALITY&#39;</span>] = <span style="color:#000">np</span>.<span style="color:#000">nan</span>
+<span style="color:#000">df</span>.<span style="color:#000">loc</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;LIFT&#39;</span>] == <span style="color:#5a2">&#39;nincs megadva&#39;</span>,<span style="color:#5a2">&#39;LIFT&#39;</span>] = <span style="color:#000">np</span>.<span style="color:#000">nan</span>
+
+<span style="color:#888;font-style:italic"># Parsing that has to happen before np.NaN assignment</span>
+<span style="color:#000">df</span> = <span style="color:#000">df</span>.<span style="color:#000">loc</span>[~<span style="color:#000">df</span>[<span style="color:#5a2">&#39;FLOORS_IN_BUILDING&#39;</span>].<span style="color:#000">str</span>.<span style="color:#000">contains</span>(<span style="color:#5a2">&#39;nincs megadva&#39;</span>)] <span style="color:#888;font-style:italic">#delete no floor buildings</span>
+<span style="color:#000">df</span>.<span style="color:#000">loc</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;ROOMS&#39;</span>].<span style="color:#000">str</span>.<span style="color:#000">contains</span>(<span style="color:#5a2">&#39;fél&#39;</span>), <span style="color:#5a2">&#39;HALF_ROOMS&#39;</span>] = <span style="color:#000">df</span>[<span style="color:#5a2">&#39;ROOMS&#39;</span>].<span style="color:#000">str</span>.<span style="color:#000">split</span>(<span style="color:#5a2">&#39;+&#39;</span>,<span style="color:#3af">1</span>).<span style="color:#000">str</span>[<span style="color:#3af">1</span>].<span style="color:#000">str</span>.<span style="color:#000">replace</span>(<span style="color:#5a2">&#39;[^\d.]*&#39;</span>, <span style="color:#5a2">&#39;&#39;</span>)
+<span style="color:#000">df</span>.<span style="color:#000">loc</span>[~<span style="color:#000">df</span>[<span style="color:#5a2">&#39;ROOMS&#39;</span>].<span style="color:#000">str</span>.<span style="color:#000">contains</span>(<span style="color:#5a2">&#39;fél&#39;</span>), <span style="color:#5a2">&#39;HALF_ROOMS&#39;</span>] = <span style="color:#3af">0</span>
+<span style="color:#000">df</span>.<span style="color:#000">loc</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;ROOMS&#39;</span>].<span style="color:#000">str</span>.<span style="color:#000">contains</span>(<span style="color:#5a2">&#39;fél&#39;</span>), <span style="color:#5a2">&#39;STANDARD_ROOMS&#39;</span>] = <span style="color:#000">df</span>[<span style="color:#5a2">&#39;ROOMS&#39;</span>].<span style="color:#000">str</span>.<span style="color:#000">split</span>(<span style="color:#5a2">&#39;+&#39;</span>,<span style="color:#3af">1</span>).<span style="color:#000">str</span>[<span style="color:#3af">0</span>]
+<span style="color:#000">df</span>.<span style="color:#000">loc</span>[~<span style="color:#000">df</span>[<span style="color:#5a2">&#39;ROOMS&#39;</span>].<span style="color:#000">str</span>.<span style="color:#000">contains</span>(<span style="color:#5a2">&#39;fél&#39;</span>), <span style="color:#5a2">&#39;STANDARD_ROOMS&#39;</span>] = <span style="color:#000">df</span>[<span style="color:#5a2">&#39;ROOMS&#39;</span>]
+
+<span style="color:#888;font-style:italic"># Formatting district from roman into arabic numbers</span>
+<span style="color:#000">df</span>[<span style="color:#5a2">&#39;DISTRICT&#39;</span>] = <span style="color:#000">df</span>[<span style="color:#5a2">&#39;ADDRESS&#39;</span>].<span style="color:#000">str</span>.<span style="color:#000">split</span>(<span style="color:#5a2">&#39;,&#39;</span>,<span style="color:#3af">1</span>).<span style="color:#000">str</span>[<span style="color:#3af">1</span>].<span style="color:#000">str</span>.<span style="color:#000">split</span>(<span style="color:#5a2">&#39;.&#39;</span>,<span style="color:#3af">1</span>).<span style="color:#000">str</span>[<span style="color:#3af">0</span>].<span style="color:#000">str</span>.<span style="color:#000">strip</span>().<span style="color:#000">apply</span>(<span style="color:#00f">lambda</span> <span style="color:#000">x</span>: <span style="color:#000">int</span>(<span style="color:#000">roman</span>.<span style="color:#000">fromRoman</span>(<span style="color:#000">x</span>)) <span style="color:#00f">if</span> <span style="color:#000">isinstance</span>(<span style="color:#000">x</span>, <span style="color:#000">str</span>) <span style="color:#00f">else</span> <span style="color:#000">np</span>.<span style="color:#000">NaN</span>)
+
+<span style="color:#888;font-style:italic"># One-Hot categorization</span>
+<span style="color:#000">QUALITY_CAT</span> = <span style="color:#000">pd</span>.<span style="color:#000">get_dummies</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;QUALITY&#39;</span>], <span style="color:#000">prefix</span> = <span style="color:#5a2">&#39;QUALITY_CAT&#39;</span>)
+<span style="color:#000">YEAR_BUILT_CAT</span> = <span style="color:#000">pd</span>.<span style="color:#000">get_dummies</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;YEAR_BUILT&#39;</span>], <span style="color:#000">prefix</span> = <span style="color:#5a2">&#39;YEAR_BUILT_CAT&#39;</span>)
+<span style="color:#000">LIFT_CAT</span> = <span style="color:#000">pd</span>.<span style="color:#000">get_dummies</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;LIFT&#39;</span>], <span style="color:#000">prefix</span> = <span style="color:#5a2">&#39;LIFT_CAT&#39;</span>)
+<span style="color:#000">ORIENTATION_CAT</span> = <span style="color:#000">pd</span>.<span style="color:#000">get_dummies</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;ORIENTATION&#39;</span>], <span style="color:#000">prefix</span> = <span style="color:#5a2">&#39;ORIENTATION_CAT&#39;</span>)
+<span style="color:#000">VIEW_CAT</span> = <span style="color:#000">pd</span>.<span style="color:#000">get_dummies</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;VIEW&#39;</span>], <span style="color:#000">prefix</span> = <span style="color:#5a2">&#39;VIEW_CAT&#39;</span>)
+<span style="color:#000">METRO_NEARBY_CAT</span> = <span style="color:#000">pd</span>.<span style="color:#000">get_dummies</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;METRO_NEARBY&#39;</span>], <span style="color:#000">prefix</span>=<span style="color:#5a2">&#39;METRO_NEARBY_CAT&#39;</span>)
+<span style="color:#000">DISTRICT_CAT</span> = <span style="color:#000">pd</span>.<span style="color:#000">get_dummies</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;DISTRICT&#39;</span>], <span style="color:#000">prefix</span>=<span style="color:#5a2">&#39;DISTRICT_CAT&#39;</span>)
+
+<span style="color:#888;font-style:italic"># Concatenate original df with categorization columns</span>
+<span style="color:#000">df</span> = <span style="color:#000">pd</span>.<span style="color:#000">concat</span>([<span style="color:#000">df</span>, <span style="color:#000">QUALITY_CAT</span>, <span style="color:#000">YEAR_BUILT_CAT</span>, <span style="color:#000">LIFT_CAT</span>, <span style="color:#000">ORIENTATION_CAT</span>, <span style="color:#000">VIEW_CAT</span>, <span style="color:#000">METRO_NEARBY_CAT</span>, <span style="color:#000">DISTRICT_CAT</span>], <span style="color:#000">axis</span>=<span style="color:#3af">1</span>)
+
+<span style="color:#888;font-style:italic"># Further cleaning of string data into int</span>
+<span style="color:#000">df</span>[<span style="color:#5a2">&#39;FLOORS_IN_BUILDING&#39;</span>] = <span style="color:#000">df</span>[<span style="color:#5a2">&#39;FLOORS_IN_BUILDING&#39;</span>].<span style="color:#000">replace</span>({<span style="color:#5a2">&#39;földszintes&#39;</span>:<span style="color:#3af">1</span>, <span style="color:#5a2">&#39;több mint 10&#39;</span>:<span style="color:#3af">11</span>})
+
+<span style="color:#888;font-style:italic"># Replacing string nan with np.Nan and removing nan related category columns</span>
+<span style="color:#000">df</span>.<span style="color:#000">replace</span>(<span style="color:#5a2">&#39;nan&#39;</span>,<span style="color:#000">np</span>.<span style="color:#000">NaN</span>,<span style="color:#000">inplace</span>=<span style="color:#000">True</span>)
+<span style="color:#000">df</span>.<span style="color:#000">drop</span>(<span style="color:#000">df</span>.<span style="color:#000">filter</span>(<span style="color:#000">regex</span>=<span style="color:#5a2">&#39;nan&#39;</span>).<span style="color:#000">columns</span>, <span style="color:#000">inplace</span>=<span style="color:#000">True</span>, <span style="color:#000">axis</span>=<span style="color:#3af">1</span>)
+
+<span style="color:#888;font-style:italic"># Parse and transform the dataframe</span>
+<span style="color:#000">df</span>[<span style="color:#5a2">&#39;SIZE&#39;</span>] = <span style="color:#000">df</span>[<span style="color:#5a2">&#39;SIZE&#39;</span>].<span style="color:#000">str</span>.<span style="color:#000">replace</span>(<span style="color:#5a2">&#39;,&#39;</span>, <span style="color:#5a2">&#39;.&#39;</span>).<span style="color:#000">str</span>.<span style="color:#000">replace</span>(<span style="color:#5a2">&#39;[^\d.]*&#39;</span>, <span style="color:#5a2">&#39;&#39;</span>).<span style="color:#000">astype</span>(<span style="color:#000">float</span>)
+<span style="color:#000">df</span>[<span style="color:#5a2">&#39;PRICE&#39;</span>] = <span style="color:#000">df</span>[<span style="color:#5a2">&#39;PRICE&#39;</span>].<span style="color:#000">str</span>.<span style="color:#000">replace</span>(<span style="color:#5a2">&#39;,&#39;</span>, <span style="color:#5a2">&#39;.&#39;</span>).<span style="color:#000">str</span>.<span style="color:#000">replace</span>(<span style="color:#5a2">&#39;[^\d.]*&#39;</span>, <span style="color:#5a2">&#39;&#39;</span>).<span style="color:#000">astype</span>(<span style="color:#000">float</span>)
+<span style="color:#000">df</span>[<span style="color:#5a2">&#39;PRICE_PER_SQM&#39;</span>] = (<span style="color:#000">df</span>[<span style="color:#5a2">&#39;PRICE&#39;</span>] / <span style="color:#000">df</span>[<span style="color:#5a2">&#39;SIZE&#39;</span>]) * <span style="color:#3af">1000</span>
+<span style="color:#000">df</span>[<span style="color:#5a2">&#39;STREET&#39;</span>] = <span style="color:#000">df</span>[<span style="color:#5a2">&#39;ADDRESS&#39;</span>].<span style="color:#000">str</span>.<span style="color:#000">split</span>(<span style="color:#5a2">&#39;,&#39;</span>,<span style="color:#3af">1</span>).<span style="color:#000">str</span>[<span style="color:#3af">0</span>]
+<span style="color:#000">df</span>[<span style="color:#5a2">&#39;FLOOR&#39;</span>] = <span style="color:#000">df</span>[<span style="color:#5a2">&#39;FLOOR&#39;</span>].<span style="color:#000">replace</span>({<span style="color:#5a2">&#39;földszint&#39;</span>:<span style="color:#3af">0</span>, <span style="color:#5a2">&#39;szuterén&#39;</span>:<span style="color:#3af">0</span>, <span style="color:#5a2">&#39;félemelet&#39;</span>:<span style="color:#3af">1</span>, <span style="color:#5a2">&#39;10 felett&#39;</span>:<span style="color:#3af">11</span>})
+
+<span style="color:#888;font-style:italic"># Deletes non-numeric columns, all should be categorized above</span>
+<span style="color:#00f">del</span> <span style="color:#000">df</span>[<span style="color:#5a2">&#39;ROOMS&#39;</span>]
+<span style="color:#00f">del</span> <span style="color:#000">df</span>[<span style="color:#5a2">&#39;ADDRESS&#39;</span>]
+<span style="color:#888;font-style:italic">#del df[&#39;QUALITY&#39;]</span>
+<span style="color:#00f">del</span> <span style="color:#000">df</span>[<span style="color:#5a2">&#39;YEAR_BUILT&#39;</span>]
+<span style="color:#00f">del</span> <span style="color:#000">df</span>[<span style="color:#5a2">&#39;LIFT&#39;</span>]
+<span style="color:#00f">del</span> <span style="color:#000">df</span>[<span style="color:#5a2">&#39;ORIENTATION&#39;</span>]
+<span style="color:#00f">del</span> <span style="color:#000">df</span>[<span style="color:#5a2">&#39;VIEW&#39;</span>]
+<span style="color:#00f">del</span> <span style="color:#000">df</span>[<span style="color:#5a2">&#39;METRO_NEARBY&#39;</span>]
+<span style="color:#00f">del</span> <span style="color:#000">df</span>[<span style="color:#5a2">&#39;STREET&#39;</span>]
+<span style="color:#888;font-style:italic">#del df[&#39;DISTRICT&#39;]</span>
+
+<span style="color:#888;font-style:italic"># Replacing NaNs</span>
+<span style="color:#000">df</span> = <span style="color:#000">df</span>.<span style="color:#000">replace</span>(-<span style="color:#3af">1</span>, <span style="color:#000">np</span>.<span style="color:#000">nan</span>)
+<span style="color:#000">df</span>.<span style="color:#000">dropna</span>(<span style="color:#000">inplace</span>=<span style="color:#000">True</span>)
+
+<span style="color:#888;font-style:italic"># Make all values numeric (if possible, leave non-numeric as-is)</span>
+<span style="color:#000">df</span> = <span style="color:#000">df</span>.<span style="color:#000">apply</span>(<span style="color:#000">pd</span>.<span style="color:#000">to_numeric</span>, <span style="color:#000">errors</span>=<span style="color:#5a2">&#39;ignore&#39;</span>)
+
+<span style="color:#888;font-style:italic"># Adding indicator for how high the appartment is within the building</span>
+<span style="color:#000">df</span>[<span style="color:#5a2">&#39;RELATIVE_FLOOR&#39;</span>] = <span style="color:#000">df</span>[<span style="color:#5a2">&#39;FLOOR&#39;</span>] / <span style="color:#000">df</span>[<span style="color:#5a2">&#39;FLOORS_IN_BUILDING&#39;</span>]
+
+<span style="color:#888;font-style:italic"># Rounding distance from centre to int</span>
+<span style="color:#000">df</span>[<span style="color:#5a2">&#39;DISTANCE_FROM_CENTRE&#39;</span>] = <span style="color:#000">df</span>[<span style="color:#5a2">&#39;DISTANCE_FROM_CENTRE&#39;</span>].<span style="color:#000">round</span>().<span style="color:#000">astype</span>(<span style="color:#000">int</span>)
+<span style="color:#000">df</span>[<span style="color:#5a2">&#39;PRICE_PER_SQM&#39;</span>] = <span style="color:#000">df</span>[<span style="color:#5a2">&#39;PRICE_PER_SQM&#39;</span>].<span style="color:#000">round</span>().<span style="color:#000">astype</span>(<span style="color:#000">int</span>)
+
+<span style="color:#000">df</span>.<span style="color:#000">head</span>(<span style="color:#3af">15</span>)</code></pre></div>
+<h3 id="3-scrape-ingatlannet-hu-for-district-real-estate-price-indices">3. Scrape ingatlannet.hu for district real estate price indices</h3>
+
+<p>As an additional source of information I am using ingatlannet.hu to access district-by-district real estate price indices to be utilized as a feature in the regression model</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Scrape past district level house price statistics</span>
+
+<span style="color:#000">dfs_priceindex</span> = []
+<span style="color:#888;font-style:italic"># Fake user agent for scraping</span>
+<span style="color:#000">ua</span> = <span style="color:#000">UserAgent</span>()
+<span style="color:#000">header</span> = {<span style="color:#5a2">&#39;User-Agent&#39;</span>: <span style="color:#000">ua</span>.<span style="color:#000">random</span>}
+
+<span style="color:#888;font-style:italic"># URL of ingatlannet price statistics per district in Budapest</span>
+<span style="color:#000">url_pricestats</span> = <span style="color:#5a2">&#39;https://www.ingatlannet.hu/statisztika/Budapest&#39;</span>
+
+<span style="color:#888;font-style:italic"># Call listing page and pull html into soup_ingatlan &#39;beautifulsoup&#39; object</span>
+<span style="color:#000">r_pricestats</span> = <span style="color:#000">req</span>.<span style="color:#000">get</span>(<span style="color:#000">url_pricestats</span>, <span style="color:#000">headers</span>=<span style="color:#000">header</span>)
+<span style="color:#000">soup_price</span> = <span style="color:#000">BeautifulSoup</span>(<span style="color:#000">r_pricestats</span>.<span style="color:#000">content</span>,<span style="color:#5a2">&#34;lxml&#34;</span>)
+
+<span style="color:#888;font-style:italic"># List the container with the district links</span>
+<span style="color:#000">district_container</span> = (<span style="color:#000">soup_price</span>
+                 .<span style="color:#000">find</span>(<span style="color:#5a2">&#39;div&#39;</span>, {<span style="color:#5a2">&#39;class&#39;</span>:<span style="color:#5a2">&#39;telepulesLista bgwhite col-sm-3 col-xs-12&#39;</span>})
+                 .<span style="color:#000">find_all</span>(<span style="color:#5a2">&#39;li&#39;</span>,{<span style="color:#5a2">&#39;class&#39;</span>:<span style="color:#5a2">&#39;col-sm-12 col-xs-6 col-xxs-12&#39;</span>})
+                )
+
+<span style="color:#888;font-style:italic"># Loop thru district container</span>
+<span style="color:#00f">for</span> <span style="color:#000">district_list</span> <span style="color:#00f">in</span> <span style="color:#000">district_container</span>:
+    
+    <span style="color:#888;font-style:italic"># Extract district names (into int) and href links</span>
+    <span style="color:#000">district_longname</span> = <span style="color:#000">district_list</span>.<span style="color:#000">find</span>(<span style="color:#5a2">&#39;a&#39;</span>).<span style="color:#000">text</span>
+    <span style="color:#000">district_romannum</span> = <span style="color:#000">district_longname</span>.<span style="color:#000">split</span>(<span style="color:#5a2">&#39;,&#39;</span>)[<span style="color:#3af">1</span>].<span style="color:#000">strip</span>().<span style="color:#000">split</span>(<span style="color:#5a2">&#39;.&#39;</span>)[<span style="color:#3af">0</span>]
+    <span style="color:#000">district_num</span> = <span style="color:#000">int</span>(<span style="color:#000">roman</span>.<span style="color:#000">fromRoman</span>(<span style="color:#000">district_romannum</span>))
+
+    <span style="color:#000">district_subpage_tobeformatted</span> = <span style="color:#000">district_list</span>.<span style="color:#000">find</span>(<span style="color:#5a2">&#39;a&#39;</span>).<span style="color:#000">attrs</span>[<span style="color:#5a2">&#39;href&#39;</span>]
+    <span style="color:#000">district_subpage_readyforbrowser</span> = <span style="color:#000">district_subpage_tobeformatted</span>.<span style="color:#000">replace</span>(<span style="color:#5a2">&#39; &#39;</span>,<span style="color:#5a2">&#39;%20&#39;</span>)
+    <span style="color:#000">district_html</span> = <span style="color:#000">urljoin</span>(<span style="color:#5a2">&#39;https://www.ingatlannet.hu/&#39;</span>,<span style="color:#000">district_subpage_readyforbrowser</span>)
+    
+    <span style="color:#888;font-style:italic"># Open district subpage</span>
+    <span style="color:#000">header</span> = {<span style="color:#5a2">&#39;User-Agent&#39;</span>: <span style="color:#000">ua</span>.<span style="color:#000">random</span>}
+    <span style="color:#000">r_district</span> = <span style="color:#000">req</span>.<span style="color:#000">get</span>(<span style="color:#000">district_html</span>, <span style="color:#000">headers</span>=<span style="color:#000">header</span>)
+    <span style="color:#000">soup_district</span> = <span style="color:#000">BeautifulSoup</span>(<span style="color:#000">r_district</span>.<span style="color:#000">content</span>,<span style="color:#5a2">&#34;lxml&#34;</span>)
+    
+    <span style="color:#888;font-style:italic"># Extract district price data</span>
+    <span style="color:#000">district_pricelist</span> = (<span style="color:#000">soup_district</span>
+                          .<span style="color:#000">find</span>(<span style="color:#5a2">&#39;div&#39;</span>,{<span style="color:#5a2">&#39;class&#39;</span>,<span style="color:#5a2">&#39;col-xs-12 margin-sm-vertical hidden-xs&#39;</span>})
+                          .<span style="color:#000">find_all</span>(<span style="color:#5a2">&#39;a&#39;</span>)[<span style="color:#3af">1</span>]
+                         )
+    
+    <span style="color:#000">historic_price_list</span> = <span style="color:#000">re</span>.<span style="color:#000">findall</span>(<span style="color:#5a2">r</span><span style="color:#5a2">&#39;\d\d\d\d-\d\d&#34;,&#34;avg&#34;:(\d*)&#39;</span>,<span style="color:#000">str</span>(<span style="color:#000">district_pricelist</span>)) <span style="color:#888;font-style:italic">#&#34;avg&#34;:309943</span>
+    
+    <span style="color:#888;font-style:italic"># Calculate yoy index</span>
+    <span style="color:#00f">try</span>:
+        <span style="color:#000">price_now</span> = <span style="color:#000">int</span>(<span style="color:#000">historic_price_list</span>[-<span style="color:#3af">1</span>])
+        <span style="color:#000">price_yearago</span> = <span style="color:#000">int</span>(<span style="color:#000">historic_price_list</span>[-<span style="color:#3af">13</span>])
+        <span style="color:#000">yoy_percentage</span> = (<span style="color:#000">price_now</span>-<span style="color:#000">price_yearago</span>)/<span style="color:#000">price_yearago</span> * <span style="color:#3af">100</span>
+
+        <span style="color:#888;font-style:italic"># Create numpy array from all the avaiable infos on the real estate</span>
+        <span style="color:#000">district_priceindex</span> = <span style="color:#000">np</span>.<span style="color:#000">array</span>([<span style="color:#000">district_num</span>,
+                                        <span style="color:#000">yoy_percentage</span>,
+                                        <span style="color:#000">price_now</span>])
+
+        <span style="color:#888;font-style:italic"># Reshape array to fit pandas structure</span>
+        <span style="color:#000">district_priceindex</span> = <span style="color:#000">district_priceindex</span>.<span style="color:#000">reshape</span>(<span style="color:#3af">1</span>,<span style="color:#000">district_priceindex</span>.<span style="color:#000">size</span>)
+
+        <span style="color:#888;font-style:italic"># Create pandas df from real estate numpy array</span>
+        <span style="color:#000">df_district_priceindex</span> = <span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">district_priceindex</span>, <span style="color:#000">columns</span> = [
+            <span style="color:#5a2">&#39;DISTRICT_NUM&#39;</span>,
+            <span style="color:#5a2">&#39;YOY_PERCENTAGE&#39;</span>,
+            <span style="color:#5a2">&#39;AVG_PRICE&#39;</span>
+        ])
+
+        <span style="color:#888;font-style:italic"># Append real estate df to list with all previous dfs</span>
+        <span style="color:#000">dfs_priceindex</span>.<span style="color:#000">append</span>(<span style="color:#000">df_district_priceindex</span>)
+    <span style="color:#00f">except</span>:
+        <span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Error&#39;</span>,<span style="color:#000">district_priceindex</span>)
+
+<span style="color:#888;font-style:italic"># Summarize final data</span>
+<span style="color:#000">df_priceindex</span> = <span style="color:#000">pd</span>.<span style="color:#000">concat</span>(<span style="color:#000">dfs_priceindex</span>)
+<span style="color:#888;font-style:italic">#df_priceindex.to_pickle(&#39;price_index2.pkl&#39;)</span></code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">#df_priceindex = pd.read_pickle(&#39;price_index2.pkl&#39;)</span>
+
+<span style="color:#888;font-style:italic"># Merging downloaded price indices with the ingatlan.com data</span>
+<span style="color:#000">df_merged</span> = <span style="color:#000">df</span>.<span style="color:#000">merge</span>(<span style="color:#000">df_priceindex</span>, <span style="color:#000">left_on</span> = <span style="color:#5a2">&#39;DISTRICT&#39;</span>, <span style="color:#000">right_on</span> = <span style="color:#5a2">&#39;DISTRICT_NUM&#39;</span>, <span style="color:#000">how</span>=<span style="color:#5a2">&#39;left&#39;</span>)
+<span style="color:#00f">del</span> <span style="color:#000">df_merged</span>[<span style="color:#5a2">&#39;DISTRICT_NUM&#39;</span>]
+<span style="color:#000">df</span> = <span style="color:#000">df_merged</span>.<span style="color:#000">copy</span>()</code></pre></div>
+<h3 id="4-observing-the-data">4. Observing the data</h3>
+
+<p>Best is to examine all of it in detail however, in my case the dataset is very large. Hence I am extracting aggregated information (what is data type, how many entries are there, etc.) and examine a random subset in detail. Make sure the data is clean (remove NaN, for example) and meaningful (e.g., if the number of customers is negative, there is a problem)</p>
+
+<p><img src="/Post_images/20181213_Apartment_price_regression/Slide_images/Slide07.png" alt="png" /></p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">pd</span>.<span style="color:#000">set_option</span>(<span style="color:#5a2">&#34;display.max_columns&#34;</span>,<span style="color:#000">df</span>.<span style="color:#000">columns</span>.<span style="color:#000">nunique</span>())
+<span style="color:#000">df</span>.<span style="color:#000">describe</span>()</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Building smaller_df to check in pairplot</span>
+<span style="color:#000">smaller_df</span>= <span style="color:#000">df</span>.<span style="color:#000">loc</span>[:,[<span style="color:#5a2">&#39;SIZE&#39;</span>,<span style="color:#5a2">&#39;FLOOR&#39;</span>,<span style="color:#5a2">&#39;DISTANCE_FROM_CENTRE&#39;</span>,<span style="color:#5a2">&#39;FLOORS_IN_BUILDING&#39;</span>,
+                      <span style="color:#5a2">&#39;HALF_ROOMS&#39;</span>,<span style="color:#5a2">&#39;STANDARD_ROOMS&#39;</span>,<span style="color:#5a2">&#39;PRICE_PER_SQM&#39;</span>,<span style="color:#5a2">&#39;YOY_PERCENTAGE&#39;</span>,<span style="color:#5a2">&#39;AVG_PRICE&#39;</span>,<span style="color:#5a2">&#39;RELATIVE_FLOOR&#39;</span>,<span style="color:#5a2">&#39;PRICE&#39;</span>]]</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">sns</span>.<span style="color:#000">pairplot</span>(<span style="color:#000">smaller_df</span>) </code></pre></div>
+<h5 id="key-observations">Key observations</h5>
+
+<ul>
+<li>(from .info) all columns are all numeric and all nan-s are dropped</li>
+<li>ID does not make sense as a feature variable</li>
+<li>PRICE has a really long tail</li>
+<li>SIZE MAX seems unreasonable (1100 SQM?)</li>
+<li>DISTANCE_FROM_CENTRE MAX and MEAN seems unreasonable (max:1257km and mean: 44km)</li>
+<li>HALF_ROOMS MAX seems unreasonable (10 half rooms?)</li>
+<li>STANDARD ROOMS MAX seems unreasonable (24 rooms?)</li>
+<li>FLOOR and FLOORS_IN_BUILDING seem to be very correlated</li>
+<li>SIZE and STANDARD_ROOMS seem to be very correlated as well</li>
+<li>RELATIVE_FLOOR should be max 1</li>
+</ul>
+
+<p>Based on the above observations I am dropping some outliers (note: droppings surely have overlaps, and to make it nicer it would good to check these first).</p>
+
+<h5 id="dropping-outliers">Dropping outliers</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">starting_observations</span> = <span style="color:#000">df</span>.<span style="color:#000">ID</span>.<span style="color:#000">nunique</span>()
+
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Starting number of observations:&#39;</span>, <span style="color:#000">df</span>.<span style="color:#000">ID</span>.<span style="color:#000">nunique</span>())
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Dropping:&#39;</span>,<span style="color:#000">df</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;PRICE_PER_SQM&#39;</span>] &gt;= <span style="color:#3af">2000</span>].<span style="color:#000">ID</span>.<span style="color:#000">nunique</span>(), <span style="color:#5a2">&#39;appartments that have 2+ M HUF PRICE/SQM&#39;</span>)
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Dropping:&#39;</span>,<span style="color:#000">df</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;PRICE&#39;</span>] &gt;= <span style="color:#3af">250</span>].<span style="color:#000">ID</span>.<span style="color:#000">nunique</span>(), <span style="color:#5a2">&#39;appartments that cost 250+ M HUF&#39;</span>)
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Dropping:&#39;</span>,<span style="color:#000">df</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;SIZE&#39;</span>] &gt;= <span style="color:#3af">200</span>].<span style="color:#000">ID</span>.<span style="color:#000">nunique</span>(), <span style="color:#5a2">&#39;appartments that are 250+ SQM&#39;</span>)
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Dropping:&#39;</span>,<span style="color:#000">df</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;DISTANCE_FROM_CENTRE&#39;</span>] &gt;= <span style="color:#3af">12000</span>].<span style="color:#000">ID</span>.<span style="color:#000">nunique</span>(), <span style="color:#5a2">&#39;appartments that 12+ km from the centre&#39;</span>)
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Dropping:&#39;</span>,<span style="color:#000">df</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;HALF_ROOMS&#39;</span>] &gt;= <span style="color:#3af">4</span>].<span style="color:#000">ID</span>.<span style="color:#000">nunique</span>(), <span style="color:#5a2">&#39;appartments with 4+ half rooms&#39;</span>)
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Dropping:&#39;</span>,<span style="color:#000">df</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;STANDARD_ROOMS&#39;</span>] &gt;= <span style="color:#3af">6</span>].<span style="color:#000">ID</span>.<span style="color:#000">nunique</span>(), <span style="color:#5a2">&#39;appartments with 6+ standard rooms&#39;</span>)
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Dropping:&#39;</span>,<span style="color:#000">df</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;RELATIVE_FLOOR&#39;</span>] &gt; <span style="color:#3af">1</span>].<span style="color:#000">ID</span>.<span style="color:#000">nunique</span>(), <span style="color:#5a2">&#39;appartments with 1+ realtive_floor score&#39;</span>)
+
+<span style="color:#000">df</span> = <span style="color:#000">df</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;PRICE_PER_SQM&#39;</span>] &lt; <span style="color:#3af">2000</span>]
+<span style="color:#000">df</span> = <span style="color:#000">df</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;PRICE&#39;</span>] &lt; <span style="color:#3af">250</span>]
+<span style="color:#000">df</span> = <span style="color:#000">df</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;SIZE&#39;</span>] &lt; <span style="color:#3af">200</span>]
+<span style="color:#000">df</span> = <span style="color:#000">df</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;DISTANCE_FROM_CENTRE&#39;</span>] &lt; <span style="color:#3af">12000</span>]
+<span style="color:#000">df</span> = <span style="color:#000">df</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;HALF_ROOMS&#39;</span>] &lt; <span style="color:#3af">4</span>]
+<span style="color:#000">df</span> = <span style="color:#000">df</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;STANDARD_ROOMS&#39;</span>] &lt; <span style="color:#3af">6</span>]
+<span style="color:#000">df</span> = <span style="color:#000">df</span>[<span style="color:#000">df</span>[<span style="color:#5a2">&#39;RELATIVE_FLOOR&#39;</span>] &lt;= <span style="color:#3af">1</span>]
+
+<span style="color:#000">df</span>.<span style="color:#000">dropna</span>(<span style="color:#000">inplace</span>=<span style="color:#000">True</span>)
+
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Dropped&#39;</span>, <span style="color:#000">starting_observations</span> - <span style="color:#000">df</span>.<span style="color:#000">ID</span>.<span style="color:#000">nunique</span>(), <span style="color:#5a2">&#39;number of records. We are left with&#39;</span>,<span style="color:#000">df</span>.<span style="color:#000">ID</span>.<span style="color:#000">nunique</span>(),<span style="color:#5a2">&#39;records&#39;</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">smaller_df</span>= <span style="color:#000">df</span>.<span style="color:#000">loc</span>[:,[<span style="color:#5a2">&#39;SIZE&#39;</span>,<span style="color:#5a2">&#39;FLOOR&#39;</span>,<span style="color:#5a2">&#39;DISTANCE_FROM_CENTRE&#39;</span>,<span style="color:#5a2">&#39;FLOORS_IN_BUILDING&#39;</span>,
+                      <span style="color:#5a2">&#39;HALF_ROOMS&#39;</span>,<span style="color:#5a2">&#39;STANDARD_ROOMS&#39;</span>,<span style="color:#5a2">&#39;PRICE_PER_SQM&#39;</span>,<span style="color:#5a2">&#39;YOY_PERCENTAGE&#39;</span>,<span style="color:#5a2">&#39;AVG_PRICE&#39;</span>,<span style="color:#5a2">&#39;RELATIVE_FLOOR&#39;</span>,<span style="color:#5a2">&#39;PRICE&#39;</span>]]
+<span style="color:#000">sns</span>.<span style="color:#000">pairplot</span>(<span style="color:#000">smaller_df</span>) </code></pre></div>
+<h3 id="5-extracting-the-descriptive-statistics">5. Extracting the descriptive statistics</h3>
+
+<p>Correlation matrix, seaborn plots (to check for colinearity; compare what you see with human intuition) and probability distributions. Linear regression will be useful if the target variable has a fairly symmetric distribution (e.g., it might look close to a normal distribution). Look at the error vs. y_pred plot for any weirdness (for example, due to bimodal distribution).</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">smaller_df</span>.<span style="color:#000">corr</span>()</code></pre></div>
+<h5 id="key-observations-1">Key Observations:</h5>
+
+<ul>
+<li>FLOOR and RELATIVE FLOOR very correlated</li>
+<li>SIZE and STANDARD_ROOMS seem to be very correlated as well</li>
+</ul>
+
+<h3 id="6-building-a-baseline-model">6. Building a baseline model</h3>
+
+<p>Using only one feature to see the fit immediately and understand how a regression model is performing on my target data. This model is not intended for &lsquo;production&rsquo;, it is rather a test and setup step in the process</p>
+
+<h5 id="train-test-split">Train-test split</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Assign features and target variables (using SIZE to predict PRICE_LOG)</span>
+<span style="color:#000">X</span>, <span style="color:#000">y</span> = <span style="color:#000">df</span>.<span style="color:#000">drop</span>([<span style="color:#5a2">&#39;ID&#39;</span>,<span style="color:#5a2">&#39;PRICE&#39;</span>,<span style="color:#5a2">&#39;PRICE_LOG&#39;</span>,<span style="color:#5a2">&#39;PRICE_PER_SQM&#39;</span>],<span style="color:#000">axis</span>=<span style="color:#3af">1</span>), <span style="color:#000">df</span>[<span style="color:#5a2">&#39;PRICE&#39;</span>]
+<span style="color:#000">X_train</span>, <span style="color:#000">X_test</span>, <span style="color:#000">y_train</span>, <span style="color:#000">y_test</span> = <span style="color:#000">train_test_split</span>(<span style="color:#000">X</span>, <span style="color:#000">y</span>, <span style="color:#000">test_size</span>=<span style="color:#3af">0.3</span>)</code></pre></div>
+<h5 id="linear-regression-model-using-sklearn">Linear regression model (using sklearn)</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Build up baseline model with only size variable</span>
+<span style="color:#000">selected_columns_1</span> = [<span style="color:#5a2">&#39;SIZE&#39;</span>]
+<span style="color:#000">lr_baseline</span> = <span style="color:#000">LinearRegression</span>()
+<span style="color:#000">lr_baseline</span>.<span style="color:#000">fit</span>(<span style="color:#000">X_train</span>.<span style="color:#000">loc</span>[:,<span style="color:#000">selected_columns_1</span>],<span style="color:#000">y_train</span>)
+<span style="color:#000">lr_baseline</span>.<span style="color:#000">coef_</span>, <span style="color:#000">lr_baseline</span>.<span style="color:#000">intercept_</span></code></pre></div>
+<h5 id="evaluate-model-performance">Evaluate model performance</h5>
+
+<p><img src="/Post_images/20181213_Apartment_price_regression/Slide_images/Slide08.png" alt="png" /></p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Performance on training data</span>
+<span style="color:#000">plt</span>.<span style="color:#000">scatter</span>(<span style="color:#000">X_train</span>[<span style="color:#5a2">&#39;SIZE&#39;</span>],<span style="color:#000">y_train</span>,<span style="color:#000">alpha</span>=.<span style="color:#3af">1</span>)
+<span style="color:#000">vec1</span> = <span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">200</span>,<span style="color:#3af">6</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">vec1</span>, <span style="color:#000">lr_baseline</span>.<span style="color:#000">intercept_</span> + <span style="color:#000">lr_baseline</span>.<span style="color:#000">coef_</span>[<span style="color:#3af">0</span>]*<span style="color:#000">vec1</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">### Performance on test data</span>
+<span style="color:#000">plt</span>.<span style="color:#000">scatter</span>(<span style="color:#000">X_test</span>[<span style="color:#5a2">&#39;SIZE&#39;</span>],<span style="color:#000">y_test</span>,<span style="color:#000">alpha</span>=.<span style="color:#3af">1</span>)
+<span style="color:#000">vec1</span> = <span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">200</span>,<span style="color:#3af">6</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">vec1</span>, <span style="color:#000">lr_baseline</span>.<span style="color:#000">intercept_</span> + <span style="color:#000">lr_baseline</span>.<span style="color:#000">coef_</span>[<span style="color:#3af">0</span>]*<span style="color:#000">vec1</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">title</span>(<span style="color:#5a2">r</span><span style="color:#5a2">&#34;Effect of appartment sizes on offer prices &#34;</span>   <span style="color:#5a2">&#34;</span><span style="color:#5a2">\n</span><span style="color:#5a2">&#34;</span>   <span style="color:#5a2">r</span><span style="color:#5a2">&#34; in Budapest, Hungary &#34;</span>   <span style="color:#5a2">&#34;</span><span style="color:#5a2">\n</span><span style="color:#5a2">&#34;</span>   <span style="color:#5a2">r</span><span style="color:#5a2">&#34; (baseline regression model)&#34;</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">xlabel</span>(<span style="color:#5a2">r</span><span style="color:#5a2">&#39;Appartment size, $m^2$&#39;</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">ylabel</span>(<span style="color:#5a2">r</span><span style="color:#5a2">&#39;Appartment offer price, million HUF&#39;</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Get the predictions on the test set</span>
+<span style="color:#000">test_set_pred1</span> = <span style="color:#000">lr_baseline</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_test</span>.<span style="color:#000">loc</span>[:,<span style="color:#000">selected_columns_1</span>])</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Plot predicted vs actual </span>
+<span style="color:#000">plt</span>.<span style="color:#000">scatter</span>(<span style="color:#000">test_set_pred1</span>,<span style="color:#000">y_test</span>,<span style="color:#000">alpha</span>=.<span style="color:#3af">1</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">140</span>,<span style="color:#3af">1000</span>),<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">130</span>,<span style="color:#3af">1000</span>))</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">## Residual Plot</span>
+<span style="color:#888;font-style:italic">## Plot predicted vs actual </span>
+
+<span style="color:#000">plt</span>.<span style="color:#000">scatter</span>(<span style="color:#000">y_test</span>,<span style="color:#000">y_test</span>-<span style="color:#000">test_set_pred1</span>,<span style="color:#000">alpha</span>=.<span style="color:#3af">1</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">150</span>,<span style="color:#3af">1000</span>),<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">0</span>,<span style="color:#3af">1000</span>))</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">mean_squared_error</span>(<span style="color:#000">y_test</span>, <span style="color:#000">test_set_pred1</span>)), <span style="color:#000">mean_absolute_error</span>(<span style="color:#000">y_test</span>,<span style="color:#000">test_set_pred1</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Baseline regression test R^2:&#39;</span>, <span style="color:#000">lr_baseline</span>.<span style="color:#000">score</span>(<span style="color:#000">X_test</span>.<span style="color:#000">loc</span>[:,<span style="color:#000">selected_columns_1</span>], <span style="color:#000">y_test</span>))</code></pre></div>
+<h4 id="7-building-an-expanded-model">7. Building an expanded model</h4>
+
+<p>The next model is a expanded versus the baseline model, however it still is not meant for &lsquo;production&rsquo;. It is run with a few features, so it is still humanly interpretable. Plot distribution of target variable, errors vs. predicted value to see if non-linearity or heteroskedasticity are an issue. Check fit of the model.</p>
+
+<h5 id="linear-regression-model-using-sklearn-1">Linear regression model (using sklearn)</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Build up expanded model</span>
+<span style="color:#000">selected_columns_2</span> = [<span style="color:#5a2">&#39;SIZE&#39;</span>,<span style="color:#5a2">&#39;FLOOR&#39;</span>,<span style="color:#5a2">&#39;DISTANCE_FROM_CENTRE&#39;</span>,<span style="color:#5a2">&#39;YOY_PERCENTAGE&#39;</span>,<span style="color:#5a2">&#39;AVG_PRICE&#39;</span>]
+<span style="color:#000">lr_expanded</span> = <span style="color:#000">LinearRegression</span>()
+<span style="color:#000">lr_expanded</span>.<span style="color:#000">fit</span>(<span style="color:#000">X_train</span>.<span style="color:#000">loc</span>[:,<span style="color:#000">selected_columns_2</span>],<span style="color:#000">y_train</span>)
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Intercept:&#39;</span>,<span style="color:#000">lr_expanded</span>.<span style="color:#000">intercept_</span>)
+<span style="color:#00f">print</span>(<span style="color:#000">list</span>(<span style="color:#000">zip</span>(<span style="color:#000">selected_columns_2</span>,<span style="color:#000">lr_expanded</span>.<span style="color:#000">coef_</span>)))</code></pre></div>
+<h5 id="evaluate-model-performance-1">Evaluate model performance</h5>
+
+<p><img src="/Post_images/20181213_Apartment_price_regression/Slide_images/Slide09.png" alt="png" /></p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Get the predictions on the test set</span>
+<span style="color:#000">test_set_pred2</span> = <span style="color:#000">lr_expanded</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_test</span>.<span style="color:#000">loc</span>[:,<span style="color:#000">selected_columns_2</span>])</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Plot predicted vs actual </span>
+<span style="color:#000">plt</span>.<span style="color:#000">scatter</span>(<span style="color:#000">test_set_pred2</span>,<span style="color:#000">y_test</span>,<span style="color:#000">alpha</span>=.<span style="color:#3af">1</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">120</span>,<span style="color:#3af">1000</span>),<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">5</span>,<span style="color:#3af">100</span>,<span style="color:#3af">1000</span>))</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">## Residual Plot</span>
+<span style="color:#888;font-style:italic">## Plot predicted vs actual </span>
+
+<span style="color:#000">plt</span>.<span style="color:#000">scatter</span>(<span style="color:#000">y_test</span>,<span style="color:#000">y_test</span>-<span style="color:#000">test_set_pred2</span>,<span style="color:#000">alpha</span>=.<span style="color:#3af">1</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">150</span>,<span style="color:#3af">1000</span>),<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">0</span>,<span style="color:#3af">1000</span>))</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">mean_squared_error</span>(<span style="color:#000">y_test</span>, <span style="color:#000">test_set_pred2</span>)), <span style="color:#000">mean_absolute_error</span>(<span style="color:#000">y_test</span>,<span style="color:#000">test_set_pred2</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Expanded regression test R^2:&#39;</span>, <span style="color:#000">lr_expanded</span>.<span style="color:#000">score</span>(<span style="color:#000">X_test</span>.<span style="color:#000">loc</span>[:,<span style="color:#000">selected_columns_2</span>], <span style="color:#000">y_test</span>))</code></pre></div>
+<h5 id="check-statsmodels-summary-output">Check statsmodels summary output</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Create your model</span>
+<span style="color:#000">model</span> = <span style="color:#000">sm</span>.<span style="color:#000">OLS</span>(<span style="color:#000">y_train</span>,<span style="color:#000">sm</span>.<span style="color:#000">add_constant</span>(<span style="color:#000">X_train</span>.<span style="color:#000">loc</span>[:,<span style="color:#000">selected_columns_2</span>]))
+<span style="color:#888;font-style:italic"># Fit your model to your training set</span>
+<span style="color:#000">fit</span> = <span style="color:#000">model</span>.<span style="color:#000">fit</span>()
+<span style="color:#888;font-style:italic"># Print summary statistics of the model&#39;s performance</span>
+<span style="color:#000">fit</span>.<span style="color:#000">summary</span>()</code></pre></div>
+<h3 id="8-build-a-complete-model">8. Build a complete model</h3>
+
+<p>Run with all features and run key diagnostics. Do you need all of the features or can you discard some of them? Are the coefficients (betas) statistically significant?</p>
+
+<h5 id="linear-regression-model-using-sklearn-2">Linear regression model (using sklearn)</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Build up complete model</span>
+<span style="color:#000">lr_complete</span> = <span style="color:#000">LinearRegression</span>()
+<span style="color:#000">lr_complete</span>.<span style="color:#000">fit</span>(<span style="color:#000">X_train</span>,<span style="color:#000">y_train</span>)
+<span style="color:#888;font-style:italic">#print(&#39;Intercept:&#39;,lr_complete.intercept_)</span>
+<span style="color:#888;font-style:italic">#list(zip(X.columns,lr_complete.coef_))</span></code></pre></div>
+<h5 id="evaluate-model-performance-2">Evaluate model performance</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Get the predictions on the test set</span>
+<span style="color:#000">test_set_pred3</span> = <span style="color:#000">lr_complete</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_test</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Plot predicted vs actual </span>
+<span style="color:#000">plt</span>.<span style="color:#000">scatter</span>(<span style="color:#000">test_set_pred3</span>,<span style="color:#000">y_test</span>,<span style="color:#000">alpha</span>=.<span style="color:#3af">1</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">125</span>,<span style="color:#3af">1000</span>),<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">10</span>,<span style="color:#3af">125</span>,<span style="color:#3af">1000</span>))</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">## Residual Plot</span>
+<span style="color:#888;font-style:italic">## Plot predicted vs actual </span>
+
+<span style="color:#000">plt</span>.<span style="color:#000">scatter</span>(<span style="color:#000">y_test</span>,<span style="color:#000">y_test</span>-<span style="color:#000">test_set_pred3</span>,<span style="color:#000">alpha</span>=.<span style="color:#3af">1</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">150</span>,<span style="color:#3af">1000</span>),<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">0</span>,<span style="color:#3af">1000</span>))</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">mean_squared_error</span>(<span style="color:#000">y_test</span>, <span style="color:#000">test_set_pred3</span>)), <span style="color:#000">mean_absolute_error</span>(<span style="color:#000">y_test</span>,<span style="color:#000">test_set_pred3</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Complete regression test R^2:&#39;</span>, <span style="color:#000">lr_complete</span>.<span style="color:#000">score</span>(<span style="color:#000">X_test</span>, <span style="color:#000">y_test</span>))</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Create your model</span>
+<span style="color:#000">model</span> = <span style="color:#000">sm</span>.<span style="color:#000">OLS</span>(<span style="color:#000">y_train</span>,<span style="color:#000">sm</span>.<span style="color:#000">add_constant</span>(<span style="color:#000">X_train</span>))
+<span style="color:#888;font-style:italic"># Fit your model to your training set</span>
+<span style="color:#000">fit</span> = <span style="color:#000">model</span>.<span style="color:#000">fit</span>()
+<span style="color:#888;font-style:italic"># Print summary statistics of the model&#39;s performance</span>
+<span style="color:#000">fit</span>.<span style="color:#000">summary</span>()</code></pre></div>
+<h5 id="refine-model-based-on-above-validation-results">Refine model (based on above validation results)</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Reduction of number of features based on above P(t) values</span>
+<span style="color:#000">df</span>[<span style="color:#5a2">&#39;Quality_CAT_befejezetlen-felujitott&#39;</span>] = (<span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;QUALITY_CAT_befejezetlen&#39;</span>]) 
+                                             + <span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;QUALITY_CAT_felújított&#39;</span>]))
+<span style="color:#000">df</span>[<span style="color:#5a2">&#39;YEAR_BUILT_CAT_before2000&#39;</span>] = (<span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;YEAR_BUILT_CAT_1950 előtt&#39;</span>]) 
+                                   + <span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;YEAR_BUILT_CAT_1950-1980 között&#39;</span>]) 
+                                   + <span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;YEAR_BUILT_CAT_1981-2000 között&#39;</span>]))
+<span style="color:#000">df</span>[<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2001-2014&#39;</span>] = (<span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2001-2010 között&#39;</span>]) 
+                                   + <span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2011&#39;</span>]) 
+                                   + <span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2012&#39;</span>]) 
+                                   + <span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2013&#39;</span>]) 
+                                   + <span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2014&#39;</span>]))
+<span style="color:#000">df</span>[<span style="color:#5a2">&#39;ORIENTATION_CAT_D-DK-DNY&#39;</span>] = (<span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;ORIENTATION_CAT_dél&#39;</span>]) 
+                                   + <span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;ORIENTATION_CAT_délkelet&#39;</span>]) 
+                                   + <span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;ORIENTATION_CAT_délnyugat&#39;</span>]))
+<span style="color:#000">df</span>[<span style="color:#5a2">&#39;ORIENTATION_CAT_E-EK-ENY&#39;</span>] = (<span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;ORIENTATION_CAT_észak&#39;</span>]) 
+                                   + <span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;ORIENTATION_CAT_északkelet&#39;</span>]) 
+                                   + <span style="color:#000">np</span>.<span style="color:#000">array</span>(<span style="color:#000">df</span>[<span style="color:#5a2">&#39;ORIENTATION_CAT_északnyugat&#39;</span>]))</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Reduction of number of features based on above P(t) values</span>
+<span style="color:#000">X_iter2</span>, <span style="color:#000">y_iter2</span> = <span style="color:#000">df</span>.<span style="color:#000">drop</span>([<span style="color:#5a2">&#39;ID&#39;</span>,<span style="color:#5a2">&#39;PRICE&#39;</span>,<span style="color:#5a2">&#39;PRICE_LOG&#39;</span>,<span style="color:#5a2">&#39;PRICE_PER_SQM&#39;</span>,
+                            <span style="color:#5a2">&#39;QUALITY_CAT_befejezetlen&#39;</span>,<span style="color:#5a2">&#39;QUALITY_CAT_felújított&#39;</span>,<span style="color:#5a2">&#39;YEAR_BUILT_CAT_1950 előtt&#39;</span>,<span style="color:#5a2">&#39;YEAR_BUILT_CAT_1950-1980 között&#39;</span>,
+                            <span style="color:#5a2">&#39;YEAR_BUILT_CAT_1981-2000 között&#39;</span>,<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2001-2010 között&#39;</span>,<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2011&#39;</span>,<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2012&#39;</span>,
+                            <span style="color:#5a2">&#39;YEAR_BUILT_CAT_2013&#39;</span>,<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2014&#39;</span>,<span style="color:#5a2">&#39;ORIENTATION_CAT_dél&#39;</span>,<span style="color:#5a2">&#39;ORIENTATION_CAT_délkelet&#39;</span>,<span style="color:#5a2">&#39;ORIENTATION_CAT_délnyugat&#39;</span>,
+                            <span style="color:#5a2">&#39;ORIENTATION_CAT_észak&#39;</span>,<span style="color:#5a2">&#39;ORIENTATION_CAT_északkelet&#39;</span>,<span style="color:#5a2">&#39;ORIENTATION_CAT_északnyugat&#39;</span>,
+                            <span style="color:#5a2">&#39;LIFT_CAT_nincs&#39;</span>,<span style="color:#5a2">&#39;DISTRICT&#39;</span>,<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2020&#39;</span>
+               ],<span style="color:#000">axis</span>=<span style="color:#3af">1</span>), <span style="color:#000">df</span>[<span style="color:#5a2">&#39;PRICE&#39;</span>]
+<span style="color:#000">X_train_iter2</span>, <span style="color:#000">X_test_iter2</span>, <span style="color:#000">y_train_iter2</span>, <span style="color:#000">y_test_iter2</span> = <span style="color:#000">train_test_split</span>(<span style="color:#000">X_iter2</span>, <span style="color:#000">y_iter2</span>, <span style="color:#000">test_size</span>=<span style="color:#3af">0.3</span>,<span style="color:#000">random_state</span>=<span style="color:#3af">42</span>)</code></pre></div>
+<h5 id="build-refined-model">Build refined model</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Create your model</span>
+<span style="color:#000">model</span> = <span style="color:#000">sm</span>.<span style="color:#000">OLS</span>(<span style="color:#000">y_train_iter2</span>,<span style="color:#000">sm</span>.<span style="color:#000">add_constant</span>(<span style="color:#000">X_train_iter2</span>))
+<span style="color:#888;font-style:italic"># Fit your model to your training set</span>
+<span style="color:#000">fit</span> = <span style="color:#000">model</span>.<span style="color:#000">fit</span>()
+<span style="color:#888;font-style:italic"># Print summary statistics of the model&#39;s performance</span>
+<span style="color:#000">fit</span>.<span style="color:#000">summary</span>()</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Build up complete model</span>
+<span style="color:#000">lr_complete_iter2</span> = <span style="color:#000">LinearRegression</span>()
+<span style="color:#000">lr_complete_iter2</span>.<span style="color:#000">fit</span>(<span style="color:#000">X_train_iter2</span>,<span style="color:#000">y_train_iter2</span>)
+<span style="color:#888;font-style:italic">#print(&#39;Intercept:&#39;,lr_complete.intercept_)</span>
+<span style="color:#888;font-style:italic">#list(zip(X.columns,lr_complete.coef_))</span></code></pre></div>
+<h5 id="evaluate-refined-model">Evaluate refined model</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Get the predictions on the test set</span>
+<span style="color:#000">test_set_pred4</span> = <span style="color:#000">lr_complete_iter2</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_test_iter2</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Plot predicted vs actual </span>
+<span style="color:#000">plt</span>.<span style="color:#000">scatter</span>(<span style="color:#000">test_set_pred4</span>,<span style="color:#000">y_test_iter2</span>,<span style="color:#000">alpha</span>=.<span style="color:#3af">1</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">125</span>,<span style="color:#3af">1000</span>),<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">10</span>,<span style="color:#3af">100</span>,<span style="color:#3af">1000</span>))</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">## Residual Plot</span>
+<span style="color:#888;font-style:italic">## Plot predicted vs actual </span>
+
+<span style="color:#000">plt</span>.<span style="color:#000">scatter</span>(<span style="color:#000">y_test_iter2</span>,<span style="color:#000">y_test_iter2</span>-<span style="color:#000">test_set_pred4</span>,<span style="color:#000">alpha</span>=.<span style="color:#3af">1</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">150</span>,<span style="color:#3af">1000</span>),<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">0</span>,<span style="color:#3af">1000</span>))</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">mean_squared_error</span>(<span style="color:#000">y_test_iter2</span>, <span style="color:#000">test_set_pred4</span>)), <span style="color:#000">mean_absolute_error</span>(<span style="color:#000">y_test_iter2</span>,<span style="color:#000">test_set_pred4</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Complete regression test R^2:&#39;</span>, <span style="color:#000">lr_complete_iter2</span>.<span style="color:#000">score</span>(<span style="color:#000">X_test_iter2</span>, <span style="color:#000">y_test_iter2</span>))</code></pre></div>
+<h3 id="9-apply-regularization">9. Apply regularization</h3>
+
+<p>By applying regularization on the features the variance explained by the model can be improved. Below I am testing both Ridge and Lasso regularization, where ridge reduces (but not eliminating) the coefficients of the less relevant features and Lasso eliminating unnecessary features.</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">X</span>, <span style="color:#000">y</span> = <span style="color:#000">df</span>.<span style="color:#000">drop</span>([<span style="color:#5a2">&#39;ID&#39;</span>,<span style="color:#5a2">&#39;PRICE&#39;</span>,<span style="color:#5a2">&#39;PRICE_LOG&#39;</span>,<span style="color:#5a2">&#39;PRICE_PER_SQM&#39;</span>,
+                            <span style="color:#5a2">&#39;QUALITY_CAT_befejezetlen&#39;</span>,<span style="color:#5a2">&#39;QUALITY_CAT_felújított&#39;</span>,<span style="color:#5a2">&#39;YEAR_BUILT_CAT_1950 előtt&#39;</span>,<span style="color:#5a2">&#39;YEAR_BUILT_CAT_1950-1980 között&#39;</span>,
+                            <span style="color:#5a2">&#39;YEAR_BUILT_CAT_1981-2000 között&#39;</span>,<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2001-2010 között&#39;</span>,<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2011&#39;</span>,<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2012&#39;</span>,
+                            <span style="color:#5a2">&#39;YEAR_BUILT_CAT_2013&#39;</span>,<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2014&#39;</span>,<span style="color:#5a2">&#39;ORIENTATION_CAT_dél&#39;</span>,<span style="color:#5a2">&#39;ORIENTATION_CAT_délkelet&#39;</span>,<span style="color:#5a2">&#39;ORIENTATION_CAT_délnyugat&#39;</span>,
+                            <span style="color:#5a2">&#39;ORIENTATION_CAT_észak&#39;</span>,<span style="color:#5a2">&#39;ORIENTATION_CAT_északkelet&#39;</span>,<span style="color:#5a2">&#39;ORIENTATION_CAT_északnyugat&#39;</span>,
+                            <span style="color:#5a2">&#39;LIFT_CAT_nincs&#39;</span>,<span style="color:#5a2">&#39;DISTRICT&#39;</span>,<span style="color:#5a2">&#39;YEAR_BUILT_CAT_2020&#39;</span>
+               ],<span style="color:#000">axis</span>=<span style="color:#3af">1</span>), <span style="color:#000">df</span>[<span style="color:#5a2">&#39;PRICE&#39;</span>]
+
+<span style="color:#888;font-style:italic"># Hold out 20% of the data for final testing and 20% for validation</span>
+<span style="color:#000">X_train_val</span>, <span style="color:#000">X_test</span>, <span style="color:#000">y_train_val</span>, <span style="color:#000">y_test</span> = <span style="color:#000">train_test_split</span>(<span style="color:#000">X</span>, <span style="color:#000">y</span>, <span style="color:#000">test_size</span>=<span style="color:#3af">0.2</span>)
+<span style="color:#000">X_train</span>, <span style="color:#000">X_val</span>, <span style="color:#000">y_train</span>, <span style="color:#000">y_val</span> = <span style="color:#000">train_test_split</span>(<span style="color:#000">X_train_val</span>, <span style="color:#000">y_train_val</span>, <span style="color:#000">test_size</span>=.<span style="color:#3af">25</span>)
+
+<span style="color:#888;font-style:italic"># Applying scaler</span>
+<span style="color:#000">scaler</span> = <span style="color:#000">StandardScaler</span>()
+<span style="color:#000">X_train_scaled</span> = <span style="color:#000">scaler</span>.<span style="color:#000">fit_transform</span>(<span style="color:#000">X_train</span>)
+<span style="color:#000">X_test_scaled</span> = <span style="color:#000">scaler</span>.<span style="color:#000">transform</span>(<span style="color:#000">X_test</span>)</code></pre></div>
+<h5 id="no-regularization-for-baseline">No regularization (for baseline)</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">lr_model_linear</span> = <span style="color:#000">LinearRegression</span>()
+<span style="color:#000">lr_model_linear</span>.<span style="color:#000">fit</span>(<span style="color:#000">X_train</span>,<span style="color:#000">y_train</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">test_set_pred_linear</span> = <span style="color:#000">lr_model_linear</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_test</span>)
+<span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">mean_squared_error</span>(<span style="color:#000">y_test</span>, <span style="color:#000">test_set_pred_linear</span>)), <span style="color:#000">mean_absolute_error</span>(<span style="color:#000">y_test</span>,<span style="color:#000">test_set_pred_linear</span>)
+
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;LINEAR regression test R^2:&#39;</span>, <span style="color:#000">lr_model_linear</span>.<span style="color:#000">score</span>(<span style="color:#000">X_test</span>, <span style="color:#000">y_test</span>))</code></pre></div>
+<h5 id="lasso-manual-alpha">LASSO (manual alpha)</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">## Finding the &#34;best&#34; value of lambda (alpha) with a single train/valid split</span>
+<span style="color:#000">alphalist</span> = <span style="color:#3af">10</span>**(<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(-<span style="color:#3af">3</span>,<span style="color:#3af">4</span>,<span style="color:#3af">200</span>))
+<span style="color:#000">err_vec_val</span> = <span style="color:#000">np</span>.<span style="color:#000">zeros</span>(<span style="color:#000">len</span>(<span style="color:#000">alphalist</span>))
+<span style="color:#000">err_vec_train</span> = <span style="color:#000">np</span>.<span style="color:#000">zeros</span>(<span style="color:#000">len</span>(<span style="color:#000">alphalist</span>))
+
+<span style="color:#00f">for</span> <span style="color:#000">i</span>,<span style="color:#000">curr_alpha</span> <span style="color:#00f">in</span> <span style="color:#000">enumerate</span>(<span style="color:#000">alphalist</span>):
+
+    <span style="color:#000">steps</span> = [(<span style="color:#5a2">&#39;standardize&#39;</span>, <span style="color:#000">StandardScaler</span>()), (<span style="color:#5a2">&#39;lasso&#39;</span>, <span style="color:#000">Lasso</span>(<span style="color:#000">alpha</span> = <span style="color:#000">curr_alpha</span>))]
+
+    <span style="color:#000">pipe</span> = <span style="color:#000">Pipeline</span>(<span style="color:#000">steps</span>)
+    <span style="color:#000">pipe</span>.<span style="color:#000">fit</span>(<span style="color:#000">X_train</span>, <span style="color:#000">y_train</span>)
+    <span style="color:#000">val_set_pred_lasso</span> = <span style="color:#000">pipe</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_val</span>)
+    <span style="color:#000">err_vec_val</span>[<span style="color:#000">i</span>] = <span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">np</span>.<span style="color:#000">mean</span>((<span style="color:#000">val_set_pred_lasso</span> - <span style="color:#000">y_val</span>)**<span style="color:#3af">2</span>))
+
+    <span style="color:#000">train_set_pred_lasso</span> = <span style="color:#000">pipe</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_train</span>)
+    <span style="color:#000">err_vec_train</span>[<span style="color:#000">i</span>] = <span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">np</span>.<span style="color:#000">mean</span>((<span style="color:#000">train_set_pred_lasso</span> - <span style="color:#000">y_train</span>)**<span style="color:#3af">2</span>))
+    
+<span style="color:#888;font-style:italic">## This is the minimum error achieved on the validation set </span>
+<span style="color:#888;font-style:italic">## across the different alpha values we tried</span>
+
+<span style="color:#000">np</span>.<span style="color:#000">min</span>(<span style="color:#000">err_vec_val</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># plot the curves of both the training error and test error as alpha changes</span>
+
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">np</span>.<span style="color:#000">log10</span>(<span style="color:#000">alphalist</span>),<span style="color:#000">err_vec_val</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">np</span>.<span style="color:#000">log10</span>(<span style="color:#000">alphalist</span>),<span style="color:#000">err_vec_train</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">title</span>(<span style="color:#5a2">&#39;Optimal alpha for LASSO regression&#39;</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">## This is the minimum error achieved on the validation set </span>
+<span style="color:#888;font-style:italic">## across the different alpha values we tried</span>
+
+<span style="color:#000">np</span>.<span style="color:#000">min</span>(<span style="color:#000">err_vec_val</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">## This is the value of alpha that gave us the lowest error</span>
+<span style="color:#000">alphalist</span>[<span style="color:#000">np</span>.<span style="color:#000">argmin</span>(<span style="color:#000">err_vec_val</span>)]</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">## Build regularized model using the optimal alpha</span>
+<span style="color:#000">lr_model_lasso</span> = <span style="color:#000">Lasso</span>(<span style="color:#000">alpha</span> = <span style="color:#3af">0.0011758495540521569</span>)
+<span style="color:#000">lr_model_lasso</span>.<span style="color:#000">fit</span>(<span style="color:#000">X_train_scaled</span>,<span style="color:#000">y_train</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">## Evaluate model performance</span>
+<span style="color:#000">test_set_pred_lasso</span> = <span style="color:#000">lr_model_lasso</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_test_scaled</span>)
+<span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">mean_squared_error</span>(<span style="color:#000">y_test</span>, <span style="color:#000">test_set_pred_lasso</span>)), <span style="color:#000">mean_absolute_error</span>(<span style="color:#000">y_test</span>,<span style="color:#000">test_set_pred_lasso</span>)
+
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;LASSO regression test R^2:&#39;</span>, <span style="color:#000">lr_model_lasso</span>.<span style="color:#000">score</span>(<span style="color:#000">X_test_scaled</span>, <span style="color:#000">y_test</span>))</code></pre></div>
+<h5 id="ridge-manual-alpha">RIDGE (manual alpha)</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">## Finding the &#34;best&#34; value of lambda (alpha) with a single train/valid split</span>
+<span style="color:#000">alphalist</span> = <span style="color:#3af">10</span>**(<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(-<span style="color:#3af">3</span>,<span style="color:#3af">4</span>,<span style="color:#3af">200</span>))
+<span style="color:#000">err_vec_val</span> = <span style="color:#000">np</span>.<span style="color:#000">zeros</span>(<span style="color:#000">len</span>(<span style="color:#000">alphalist</span>))
+<span style="color:#000">err_vec_train</span> = <span style="color:#000">np</span>.<span style="color:#000">zeros</span>(<span style="color:#000">len</span>(<span style="color:#000">alphalist</span>))
+
+<span style="color:#00f">for</span> <span style="color:#000">i</span>,<span style="color:#000">curr_alpha</span> <span style="color:#00f">in</span> <span style="color:#000">enumerate</span>(<span style="color:#000">alphalist</span>):
+
+    <span style="color:#888;font-style:italic">#steps = [(&#39;standardize&#39;, StandardScaler()), (&#39;lasso&#39;, Lasso(alpha = curr_alpha))]</span>
+    <span style="color:#000">steps</span> = [(<span style="color:#5a2">&#39;standardize&#39;</span>, <span style="color:#000">StandardScaler</span>()), (<span style="color:#5a2">&#39;ridge&#39;</span>, <span style="color:#000">Ridge</span>(<span style="color:#000">alpha</span> = <span style="color:#000">curr_alpha</span>))]
+
+    <span style="color:#000">pipe</span> = <span style="color:#000">Pipeline</span>(<span style="color:#000">steps</span>)
+    <span style="color:#000">pipe</span>.<span style="color:#000">fit</span>(<span style="color:#000">X_train</span>, <span style="color:#000">y_train</span>)
+    <span style="color:#000">val_set_pred_lasso</span> = <span style="color:#000">pipe</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_val</span>)
+    <span style="color:#000">err_vec_val</span>[<span style="color:#000">i</span>] = <span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">np</span>.<span style="color:#000">mean</span>((<span style="color:#000">val_set_pred_lasso</span> - <span style="color:#000">y_val</span>)**<span style="color:#3af">2</span>))
+
+    <span style="color:#000">train_set_pred_lasso</span> = <span style="color:#000">pipe</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_train</span>)
+    <span style="color:#000">err_vec_train</span>[<span style="color:#000">i</span>] = <span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">np</span>.<span style="color:#000">mean</span>((<span style="color:#000">train_set_pred_lasso</span> - <span style="color:#000">y_train</span>)**<span style="color:#3af">2</span>))</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">#plot the curves of both the training error and test error as alpha changes</span>
+
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">np</span>.<span style="color:#000">log10</span>(<span style="color:#000">alphalist</span>),<span style="color:#000">err_vec_val</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">np</span>.<span style="color:#000">log10</span>(<span style="color:#000">alphalist</span>),<span style="color:#000">err_vec_train</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">title</span>(<span style="color:#5a2">&#39;Optimal alpha for RIDGE regression&#39;</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">## This is the minimum error achieved on the validation set </span>
+<span style="color:#888;font-style:italic">## across the different alpha values we tried</span>
+
+<span style="color:#000">np</span>.<span style="color:#000">min</span>(<span style="color:#000">err_vec_val</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">## This is the value of alpha that gave us the lowest error</span>
+<span style="color:#000">alphalist</span>[<span style="color:#000">np</span>.<span style="color:#000">argmin</span>(<span style="color:#000">err_vec_val</span>)]</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Applying ridge model</span>
+<span style="color:#000">lr_model_ridge</span> = <span style="color:#000">Ridge</span>(<span style="color:#000">alpha</span> = <span style="color:#3af">0.001</span>)
+<span style="color:#000">lr_model_ridge</span>.<span style="color:#000">fit</span>(<span style="color:#000">X_train_scaled</span>,<span style="color:#000">y_train</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Evaluate model performance</span>
+<span style="color:#000">test_set_pred_ridge</span> = <span style="color:#000">lr_model_ridge</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_test_scaled</span>)
+<span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">mean_squared_error</span>(<span style="color:#000">y_test</span>, <span style="color:#000">test_set_pred_ridge</span>)), <span style="color:#000">mean_absolute_error</span>(<span style="color:#000">y_test</span>,<span style="color:#000">test_set_pred_ridge</span>)
+
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;RIDGE regression test R^2:&#39;</span>, <span style="color:#000">lr_model_ridge</span>.<span style="color:#000">score</span>(<span style="color:#000">X_test_scaled</span>, <span style="color:#000">y_test</span>))</code></pre></div>
+<h5 id="visualize-feature-importance-using-lars-path">Visualize feature importance using LARS-path</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">## Scale the variables</span>
+<span style="color:#000">std</span> = <span style="color:#000">StandardScaler</span>()
+<span style="color:#888;font-style:italic">#std.fit(X_train.values.astype(float))</span>
+<span style="color:#000">std</span>.<span style="color:#000">fit</span>(<span style="color:#000">X_train</span>)
+
+<span style="color:#000">X_tr</span> = <span style="color:#000">std</span>.<span style="color:#000">transform</span>(<span style="color:#000">X_train</span>)
+
+<span style="color:#000">alphas</span>, <span style="color:#000">_</span>, <span style="color:#000">coefs</span> = <span style="color:#000">lars_path</span>(<span style="color:#000">X_tr</span>, <span style="color:#000">y_train</span>.<span style="color:#000">values</span>, <span style="color:#000">method</span>=<span style="color:#5a2">&#39;lasso&#39;</span>, <span style="color:#000">verbose</span>=<span style="color:#000">True</span>)
+
+<span style="color:#000">xx</span> = <span style="color:#000">np</span>.<span style="color:#000">sum</span>(<span style="color:#000">np</span>.<span style="color:#000">abs</span>(<span style="color:#000">coefs</span>.<span style="color:#000">T</span>), <span style="color:#000">axis</span>=<span style="color:#3af">1</span>)
+<span style="color:#000">xx</span> /= <span style="color:#000">xx</span>[-<span style="color:#3af">1</span>]
+
+<span style="color:#000">plt</span>.<span style="color:#000">figure</span>(<span style="color:#000">figsize</span>=(<span style="color:#3af">10</span>,<span style="color:#3af">10</span>))
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">xx</span>, <span style="color:#000">coefs</span>.<span style="color:#000">T</span>)
+<span style="color:#000">ymin</span>, <span style="color:#000">ymax</span> = <span style="color:#000">plt</span>.<span style="color:#000">ylim</span>()
+<span style="color:#000">plt</span>.<span style="color:#000">vlines</span>(<span style="color:#000">xx</span>, <span style="color:#000">ymin</span>, <span style="color:#000">ymax</span>, <span style="color:#000">linestyle</span>=<span style="color:#5a2">&#39;dashed&#39;</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">xlabel</span>(<span style="color:#5a2">&#39;|coef| / max|coef|&#39;</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">ylabel</span>(<span style="color:#5a2">&#39;Coefficients&#39;</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">title</span>(<span style="color:#5a2">&#39;LASSO Path&#39;</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">axis</span>(<span style="color:#5a2">&#39;tight&#39;</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">legend</span>(<span style="color:#000">X_train</span>.<span style="color:#000">columns</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">show</span>()</code></pre></div>
+<h3 id="10-adding-complexity-to-the-model">10. Adding complexity to the model</h3>
+
+<p>Challenge, and try POLYNOMIAL features combined with LASSO, given the following observations:
+- the model is (slightly) overpredicting for prices ~60-75M HUF and underpredicting above (need for 2 ensemled models - not in scope)
+- the model might be missing polynomial and interdependency features (need for more features?)</p>
+
+<h5 id="adding-second-degree-polynomials-to-the-model">Adding second degree polynomials to the model</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># To avoid overfitting, creating polynomial terms for selected columns only</span>
+<span style="color:#888;font-style:italic"># A: function to add second degree term</span>
+<span style="color:#00f">def</span> <span style="color:#000">add_square_terms</span>(<span style="color:#000">df</span>, <span style="color:#000">selected_columns</span>):    
+    
+    <span style="color:#000">df_poly</span> = <span style="color:#000">df</span>.<span style="color:#000">copy</span>()
+    
+    <span style="color:#00f">for</span> <span style="color:#000">c</span> <span style="color:#00f">in</span> <span style="color:#000">df</span>.<span style="color:#000">loc</span>[:,<span style="color:#000">selected_columns</span>].<span style="color:#000">columns</span>:
+        <span style="color:#000">df_poly</span>[<span style="color:#000">c</span> + <span style="color:#5a2">&#39;**2&#39;</span>] = <span style="color:#000">df</span>[<span style="color:#000">c</span>]**<span style="color:#3af">2</span>
+        
+    <span style="color:#00f">return</span> <span style="color:#000">df_poly</span></code></pre></div>
+<h5 id="fitting-polynomial-model">Fitting polynomial model</h5>
+
+<p><img src="/Post_images/20181213_Apartment_price_regression/Slide_images/Slide10.png" alt="png" /></p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># B: fitting polynomial model for selected columns</span>
+<span style="color:#000">selected_columns</span> = [<span style="color:#5a2">&#39;SIZE&#39;</span>, <span style="color:#5a2">&#39;FLOOR&#39;</span>,<span style="color:#5a2">&#39;FLOORS_IN_BUILDING&#39;</span>,<span style="color:#5a2">&#39;RELATIVE_FLOOR&#39;</span>, <span style="color:#5a2">&#39;DISTANCE_FROM_CENTRE&#39;</span>,<span style="color:#5a2">&#39;HALF_ROOMS&#39;</span>,<span style="color:#5a2">&#39;STANDARD_ROOMS&#39;</span>,<span style="color:#5a2">&#39;YOY_PERCENTAGE&#39;</span>,<span style="color:#5a2">&#39;AVG_PRICE&#39;</span>]
+
+<span style="color:#000">X_train_poly</span> = <span style="color:#000">add_square_terms</span>(<span style="color:#000">X_train</span>,<span style="color:#000">selected_columns</span>)
+<span style="color:#000">X_val_poly</span> = <span style="color:#000">add_square_terms</span>(<span style="color:#000">X_val</span>,<span style="color:#000">selected_columns</span>)
+<span style="color:#000">X_test_poly</span> = <span style="color:#000">add_square_terms</span>(<span style="color:#000">X_test</span>,<span style="color:#000">selected_columns</span>)
+
+<span style="color:#000">lm_poly</span> = <span style="color:#000">LinearRegression</span>()
+<span style="color:#000">lm_poly</span>.<span style="color:#000">fit</span>(<span style="color:#000">X_train_poly</span>, <span style="color:#000">y_train</span>)
+
+<span style="color:#000">test_set_pred_second</span> = <span style="color:#000">lm_poly</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_test_poly</span>)
+
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Degree 2 polynomial regression validation R^2: </span><span style="color:#5a2">%.3f</span><span style="color:#5a2">&#39;</span>, <span style="color:#000">lm_poly</span>.<span style="color:#000">score</span>(<span style="color:#000">X_val_poly</span>, <span style="color:#000">y_val</span>))
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;LINEAR regression validation R^2:&#39;</span>, <span style="color:#000">lr_model_linear</span>.<span style="color:#000">score</span>(<span style="color:#000">X_val</span>, <span style="color:#000">y_val</span>))
+
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Degree 2 polynomial regression test R^2: </span><span style="color:#5a2">%.3f</span><span style="color:#5a2">&#39;</span>, <span style="color:#000">lm_poly</span>.<span style="color:#000">score</span>(<span style="color:#000">X_test_poly</span>, <span style="color:#000">y_test</span>))
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;LINEAR regression test R^2:&#39;</span>, <span style="color:#000">lr_model_linear</span>.<span style="color:#000">score</span>(<span style="color:#000">X_test</span>, <span style="color:#000">y_test</span>))
+
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;2nd degree RMSE:&#39;</span>,<span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">mean_squared_error</span>(<span style="color:#000">y_test</span>, <span style="color:#000">test_set_pred_second</span>)), <span style="color:#5a2">&#39;MAE&#39;</span>,<span style="color:#000">mean_absolute_error</span>(<span style="color:#000">y_test</span>,<span style="color:#000">test_set_pred_second</span>))</code></pre></div>
+<h5 id="applying-lasso-regularization-on-polynomial-model">Applying LASSO regularization on polynomial model</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Pulling &#34;back&#34; polynomial model</span>
+<span style="color:#888;font-style:italic"># 1. Applying scaler</span>
+<span style="color:#000">scaler</span> = <span style="color:#000">StandardScaler</span>()
+<span style="color:#000">X_train_scaled</span> = <span style="color:#000">scaler</span>.<span style="color:#000">fit_transform</span>(<span style="color:#000">X_train_poly</span>)
+<span style="color:#000">X_test_scaled</span> = <span style="color:#000">scaler</span>.<span style="color:#000">transform</span>(<span style="color:#000">X_test_poly</span>)
+
+<span style="color:#888;font-style:italic">## 2. Finding the &#34;best&#34; value of lambda (alpha) with a single train/valid split</span>
+<span style="color:#000">alphalist</span> = <span style="color:#3af">10</span>**(<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(-<span style="color:#3af">3</span>,<span style="color:#3af">4</span>,<span style="color:#3af">200</span>))
+<span style="color:#000">err_vec_val</span> = <span style="color:#000">np</span>.<span style="color:#000">zeros</span>(<span style="color:#000">len</span>(<span style="color:#000">alphalist</span>))
+<span style="color:#000">err_vec_train</span> = <span style="color:#000">np</span>.<span style="color:#000">zeros</span>(<span style="color:#000">len</span>(<span style="color:#000">alphalist</span>))
+
+<span style="color:#00f">for</span> <span style="color:#000">i</span>,<span style="color:#000">curr_alpha</span> <span style="color:#00f">in</span> <span style="color:#000">enumerate</span>(<span style="color:#000">alphalist</span>):
+
+    <span style="color:#000">steps</span> = [(<span style="color:#5a2">&#39;standardize&#39;</span>, <span style="color:#000">StandardScaler</span>()), (<span style="color:#5a2">&#39;lasso&#39;</span>, <span style="color:#000">Lasso</span>(<span style="color:#000">alpha</span> = <span style="color:#000">curr_alpha</span>))]
+<span style="color:#888;font-style:italic">#   steps = [(&#39;standardize&#39;, StandardScaler()), (&#39;ridge&#39;, Ridge(alpha = curr_alpha))]</span>
+
+    <span style="color:#000">pipe</span> = <span style="color:#000">Pipeline</span>(<span style="color:#000">steps</span>)
+    <span style="color:#000">pipe</span>.<span style="color:#000">fit</span>(<span style="color:#000">X_train_poly</span>, <span style="color:#000">y_train</span>)
+    <span style="color:#000">val_set_pred_lasso</span> = <span style="color:#000">pipe</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_val_poly</span>)
+    <span style="color:#000">err_vec_val</span>[<span style="color:#000">i</span>] = <span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">np</span>.<span style="color:#000">mean</span>((<span style="color:#000">val_set_pred_lasso</span> - <span style="color:#000">y_val</span>)**<span style="color:#3af">2</span>))
+
+    <span style="color:#000">train_set_pred_lasso</span> = <span style="color:#000">pipe</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_train_poly</span>)
+    <span style="color:#000">err_vec_train</span>[<span style="color:#000">i</span>] = <span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">np</span>.<span style="color:#000">mean</span>((<span style="color:#000">train_set_pred_lasso</span> - <span style="color:#000">y_train</span>)**<span style="color:#3af">2</span>))
+    
+<span style="color:#888;font-style:italic"># 3. This is the value of alpha that gave us the lowest error</span>
+<span style="color:#000">ideal_alpha</span> = <span style="color:#000">alphalist</span>[<span style="color:#000">np</span>.<span style="color:#000">argmin</span>(<span style="color:#000">err_vec_val</span>)]
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Ideal alpha for LASSO&#39;</span>, <span style="color:#000">ideal_alpha</span>)</code></pre></div>
+<h5 id="refitting-regularized-polynomial-model">Refitting regularized polynomial model</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># 4. Fit the lasso model with above alpha</span>
+<span style="color:#000">lr_model_lasso</span> = <span style="color:#000">Lasso</span>(<span style="color:#000">alpha</span> = <span style="color:#000">ideal_alpha</span>)
+<span style="color:#000">lr_model_lasso</span>.<span style="color:#000">fit</span>(<span style="color:#000">X_train_scaled</span>,<span style="color:#000">y_train</span>)
+
+<span style="color:#888;font-style:italic"># 5. Predict on test data with LASSO model</span>
+<span style="color:#000">test_set_pred_lasso</span> = <span style="color:#000">lr_model_lasso</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_test_scaled</span>)
+
+<span style="color:#888;font-style:italic"># 6. Error testing</span>
+<span style="color:#00f">print</span>(<span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">mean_squared_error</span>(<span style="color:#000">y_test</span>, <span style="color:#000">test_set_pred_lasso</span>)), <span style="color:#000">mean_absolute_error</span>(<span style="color:#000">y_test</span>,<span style="color:#000">test_set_pred_lasso</span>))
+
+<span style="color:#888;font-style:italic"># 7. Final R**2 result and listing listing variables with statistical significance</span>
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;LASSO regression test R^2:&#39;</span>, <span style="color:#000">lr_model_lasso</span>.<span style="color:#000">score</span>(<span style="color:#000">X_test_scaled</span>, <span style="color:#000">y_test</span>))
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Intercept:&#39;</span>,<span style="color:#000">lr_model_lasso</span>.<span style="color:#000">intercept_</span>)
+
+<span style="color:#000">list</span>(<span style="color:#000">zip</span>(<span style="color:#000">X_train_poly</span>.<span style="color:#000">columns</span>,<span style="color:#000">lr_model_lasso</span>.<span style="color:#000">coef_</span>))
+
+<span style="color:#888;font-style:italic">#list(zip(poly.get_feature_names(),lr_model_lasso.coef_)) #to be used with polynomialfeatures()</span></code></pre></div>
+<h5 id="adding-interaction-features-and-polynomial-features">Adding interaction features and polynomial features</h5>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># To avoid overfitting, creating polynomial terms for selected columns only</span>
+<span style="color:#888;font-style:italic"># A: function to add interaction terms of selected columns</span>
+<span style="color:#00f">def</span> <span style="color:#000">add_interaction_terms</span>(<span style="color:#000">df</span>, <span style="color:#000">selected_columns</span>):    
+    
+    <span style="color:#000">df_poly</span> = <span style="color:#000">df</span>.<span style="color:#000">copy</span>()
+    
+    <span style="color:#000">interactions</span> = <span style="color:#000">PolynomialFeatures</span>(<span style="color:#000">degree</span>=<span style="color:#3af">2</span>, <span style="color:#000">interaction_only</span>=<span style="color:#000">True</span>)
+    
+    <span style="color:#000">X_inter</span> = <span style="color:#000">interactions</span>.<span style="color:#000">fit_transform</span>(<span style="color:#000">df_poly</span>.<span style="color:#000">loc</span>[:,<span style="color:#000">selected_columns</span>])
+    <span style="color:#000">target_feature_names</span> = [<span style="color:#5a2">&#39;x&#39;</span>.<span style="color:#000">join</span>([<span style="color:#5a2">&#39;{}^{}&#39;</span>.<span style="color:#000">format</span>(<span style="color:#000">pair</span>[<span style="color:#3af">0</span>],<span style="color:#000">pair</span>[<span style="color:#3af">1</span>]) <span style="color:#00f">for</span> <span style="color:#000">pair</span> <span style="color:#00f">in</span> <span style="color:#000">tuple</span> <span style="color:#00f">if</span> <span style="color:#000">pair</span>[<span style="color:#3af">1</span>]!=<span style="color:#3af">0</span>]) <span style="color:#00f">for</span> <span style="color:#000">tuple</span> <span style="color:#00f">in</span> [<span style="color:#000">zip</span>(<span style="color:#000">df_poly</span>.<span style="color:#000">columns</span>,<span style="color:#000">p</span>) <span style="color:#00f">for</span> <span style="color:#000">p</span> <span style="color:#00f">in</span> <span style="color:#000">interactions</span>.<span style="color:#000">powers_</span>]]
+    
+    <span style="color:#000">X_inter</span> = <span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">X_inter</span>,<span style="color:#000">columns</span>=<span style="color:#000">target_feature_names</span>)
+    <span style="color:#000">df_poly</span> = <span style="color:#000">X_inter</span>.<span style="color:#000">join</span>(<span style="color:#000">df_poly</span>.<span style="color:#000">reset_index</span>())
+    
+    <span style="color:#000">df_poly</span>.<span style="color:#000">drop</span>(<span style="color:#000">df_poly</span>.<span style="color:#000">columns</span>[<span style="color:#000">range</span>(<span style="color:#3af">0</span>, <span style="color:#000">len</span>(<span style="color:#000">selected_columns</span>)+<span style="color:#3af">1</span>)], <span style="color:#000">axis</span>=<span style="color:#3af">1</span>, <span style="color:#000">inplace</span>=<span style="color:#000">True</span>)
+    <span style="color:#00f">del</span> <span style="color:#000">df_poly</span>[<span style="color:#5a2">&#39;index&#39;</span>]
+    
+    <span style="color:#00f">return</span> <span style="color:#000">df_poly</span></code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">interactions</span> = <span style="color:#000">PolynomialFeatures</span>(<span style="color:#000">degree</span>=<span style="color:#3af">2</span>, <span style="color:#000">interaction_only</span>=<span style="color:#000">True</span>)
+
+<span style="color:#000">lm_interaction</span> = <span style="color:#000">LinearRegression</span>()
+
+<span style="color:#000">selected_columns_second_degree</span> = [<span style="color:#5a2">&#39;SIZE&#39;</span>, <span style="color:#5a2">&#39;FLOOR&#39;</span>,<span style="color:#5a2">&#39;FLOORS_IN_BUILDING&#39;</span>,<span style="color:#5a2">&#39;RELATIVE_FLOOR&#39;</span>, <span style="color:#5a2">&#39;DISTANCE_FROM_CENTRE&#39;</span>,<span style="color:#5a2">&#39;HALF_ROOMS&#39;</span>,<span style="color:#5a2">&#39;STANDARD_ROOMS&#39;</span>,<span style="color:#5a2">&#39;YOY_PERCENTAGE&#39;</span>,<span style="color:#5a2">&#39;AVG_PRICE&#39;</span>]
+
+<span style="color:#000">X_train_poly</span> = <span style="color:#000">add_interaction_terms</span>(<span style="color:#000">add_square_terms</span>(<span style="color:#000">X_train</span>,<span style="color:#000">selected_columns_second_degree</span>),<span style="color:#000">list</span>(<span style="color:#000">X_train</span>.<span style="color:#000">columns</span>))
+<span style="color:#000">X_val_poly</span> = <span style="color:#000">add_interaction_terms</span>(<span style="color:#000">add_square_terms</span>(<span style="color:#000">X_val</span>,<span style="color:#000">selected_columns_second_degree</span>),<span style="color:#000">list</span>(<span style="color:#000">X_train</span>.<span style="color:#000">columns</span>))
+<span style="color:#000">X_test_poly</span> = <span style="color:#000">add_interaction_terms</span>(<span style="color:#000">add_square_terms</span>(<span style="color:#000">X_test</span>,<span style="color:#000">selected_columns_second_degree</span>),<span style="color:#000">list</span>(<span style="color:#000">X_train</span>.<span style="color:#000">columns</span>))
+
+<span style="color:#000">lm_interaction</span>.<span style="color:#000">fit</span>(<span style="color:#000">X_train_poly</span>, <span style="color:#000">y_train</span>)
+
+<span style="color:#888;font-style:italic"># 5. Predict on test data</span>
+<span style="color:#000">test_set_pred_polynom</span> = <span style="color:#000">lm_interaction</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_test_poly</span>)
+
+<span style="color:#888;font-style:italic"># 6. Error testing</span>
+<span style="color:#00f">print</span>(<span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">mean_squared_error</span>(<span style="color:#000">y_test</span>, <span style="color:#000">test_set_pred_polynom</span>)), <span style="color:#000">mean_absolute_error</span>(<span style="color:#000">y_test</span>,<span style="color:#000">test_set_pred_polynom</span>))
+
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Polynomial and interaction model R^2: </span><span style="color:#5a2">%.3f</span><span style="color:#5a2">&#39;</span> % <span style="color:#000">lm_interaction</span>.<span style="color:#000">score</span>(<span style="color:#000">X_val_poly</span>, <span style="color:#000">y_val</span>))
+<span style="color:#888;font-style:italic">#list(zip(X_train_poly.columns,lm_interaction.coef_))</span></code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">## Residual Plot</span>
+<span style="color:#888;font-style:italic">## Plot predicted vs actual </span>
+
+<span style="color:#000">plt</span>.<span style="color:#000">scatter</span>(<span style="color:#000">y_test</span>,<span style="color:#000">y_test</span>-<span style="color:#000">test_set_pred_polynom</span>,<span style="color:#000">alpha</span>=.<span style="color:#3af">1</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">150</span>,<span style="color:#3af">1000</span>),<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">0</span>,<span style="color:#3af">1000</span>))
+<span style="color:#000">plt</span>.<span style="color:#000">title</span>(<span style="color:#5a2">&#39;Polynomial Actual vs. Residual&#39;</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">xlabel</span>(<span style="color:#5a2">&#39;Target test set&#39;</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">ylabel</span>(<span style="color:#5a2">&#39;Residual of predictions on test set&#39;</span>)</code></pre></div>
+<h5 id="applying-regularization-on-interaction-polynomial-model">Applying regularization on interaction+polynomial model</h5>
+
+<p>In this regularization step I am using less verbose, yet more effective way to find the optimal alpha and fit regularized model in 1 step</p>
+
+<p><img src="/Post_images/20181213_Apartment_price_regression/Slide_images/Slide11.png" alt="png" /></p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># 1. Simpler LASSO methodology</span>
+
+<span style="color:#000">scaler</span> = <span style="color:#000">StandardScaler</span>()
+<span style="color:#000">X_train_scaled</span> = <span style="color:#000">scaler</span>.<span style="color:#000">fit_transform</span>(<span style="color:#000">X_train_poly</span>)
+<span style="color:#000">X_test_scaled</span> = <span style="color:#000">scaler</span>.<span style="color:#000">transform</span>(<span style="color:#000">X_test_poly</span>)
+
+<span style="color:#888;font-style:italic">#alphavec = 10**np.linspace(-2,9,100)</span>
+<span style="color:#000">lr_model_lasso</span> = <span style="color:#000">LassoCV</span>(<span style="color:#000">n_alphas</span>=<span style="color:#3af">100</span>, <span style="color:#000">cv</span>=<span style="color:#3af">5</span>) <span style="color:#888;font-style:italic">#alphas = alphavec</span>
+
+<span style="color:#000">lr_model_lasso</span>.<span style="color:#000">fit</span>(<span style="color:#000">X_train_scaled</span>,<span style="color:#000">y_train</span>)
+
+<span style="color:#000">test_set_pred_lasso</span> = <span style="color:#000">lr_model_lasso</span>.<span style="color:#000">predict</span>(<span style="color:#000">X_test_scaled</span>)</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># 2. Error testing</span>
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;RMSE:&#39;</span>,<span style="color:#000">np</span>.<span style="color:#000">sqrt</span>(<span style="color:#000">mean_squared_error</span>(<span style="color:#000">y_test</span>, <span style="color:#000">test_set_pred_lasso</span>)), <span style="color:#5a2">&#39;MAE:&#39;</span>,<span style="color:#000">mean_absolute_error</span>(<span style="color:#000">y_test</span>,<span style="color:#000">test_set_pred_lasso</span>))
+
+<span style="color:#888;font-style:italic"># 3. Final R**2 result and listing listing variables with statistical significance</span>
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;LASSO regression train R^2:&#39;</span>, <span style="color:#000">lr_model_lasso</span>.<span style="color:#000">score</span>(<span style="color:#000">X_train_scaled</span>, <span style="color:#000">y_train</span>))
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;LASSO regression test R^2:&#39;</span>, <span style="color:#000">lr_model_lasso</span>.<span style="color:#000">score</span>(<span style="color:#000">X_test_scaled</span>, <span style="color:#000">y_test</span>))
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Intercept:&#39;</span>,<span style="color:#000">lr_model_lasso</span>.<span style="color:#000">intercept_</span>)
+<span style="color:#000">list</span>(<span style="color:#000">zip</span>(<span style="color:#000">X_train_poly</span>.<span style="color:#000">columns</span>,<span style="color:#000">lr_model_lasso</span>.<span style="color:#000">coef_</span>))</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#000">df_predictors</span> = <span style="color:#000">pd</span>.<span style="color:#000">DataFrame</span>(<span style="color:#000">list</span>(<span style="color:#000">zip</span>(<span style="color:#000">X_train_poly</span>.<span style="color:#000">columns</span>,<span style="color:#000">lr_model_lasso</span>.<span style="color:#000">coef_</span>)),<span style="color:#000">columns</span>=[<span style="color:#5a2">&#39;Predictor&#39;</span>,<span style="color:#5a2">&#39;Value&#39;</span>])
+<span style="color:#000">df_predictors</span>[<span style="color:#5a2">&#39;absolute_value&#39;</span>] = <span style="color:#000">np</span>.<span style="color:#000">absolute</span>(<span style="color:#000">df_predictors</span>[<span style="color:#5a2">&#39;Value&#39;</span>])
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Total features&#39;</span>,<span style="color:#000">df_predictors</span>.<span style="color:#000">Predictor</span>.<span style="color:#000">nunique</span>())
+<span style="color:#000">df_predictors</span> = <span style="color:#000">df_predictors</span>[<span style="color:#000">df_predictors</span>[<span style="color:#5a2">&#39;Value&#39;</span>] != <span style="color:#3af">0</span>]
+
+<span style="color:#00f">print</span>(<span style="color:#5a2">&#39;Relevant features&#39;</span>,<span style="color:#000">df_predictors</span>.<span style="color:#000">Predictor</span>.<span style="color:#000">nunique</span>())
+<span style="color:#000">df_predictors</span>.<span style="color:#000">sort_values</span>(<span style="color:#5a2">&#39;absolute_value&#39;</span>,<span style="color:#000">ascending</span>=<span style="color:#000">False</span>).<span style="color:#000">head</span>(<span style="color:#3af">10</span>)</code></pre></div>
+<h5 id="evaluate-model-performance-3">Evaluate model performance</h5>
+
+<p><img src="/Post_images/20181213_Apartment_price_regression/Slide_images/Slide12.png" alt="png" /></p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Plot predicted vs actual </span>
+<span style="color:#000">plt</span>.<span style="color:#000">scatter</span>(<span style="color:#000">test_set_pred_lasso</span>,<span style="color:#000">y_test</span>,<span style="color:#000">alpha</span>=.<span style="color:#3af">1</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">120</span>,<span style="color:#3af">1000</span>),<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">5</span>,<span style="color:#3af">100</span>,<span style="color:#3af">1000</span>))</code></pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic">## Residual Plot</span>
+<span style="color:#888;font-style:italic">## Plot predicted vs actual </span>
+
+<span style="color:#000">plt</span>.<span style="color:#000">scatter</span>(<span style="color:#000">y_test</span>,<span style="color:#000">y_test</span>-<span style="color:#000">test_set_pred_lasso</span>,<span style="color:#000">alpha</span>=.<span style="color:#3af">1</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">plot</span>(<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">150</span>,<span style="color:#3af">1000</span>),<span style="color:#000">np</span>.<span style="color:#000">linspace</span>(<span style="color:#3af">0</span>,<span style="color:#3af">0</span>,<span style="color:#3af">1000</span>))
+<span style="color:#000">plt</span>.<span style="color:#000">title</span>(<span style="color:#5a2">&#39;LASSO Actual vs. Residual&#39;</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">xlabel</span>(<span style="color:#5a2">&#39;Target test set&#39;</span>)
+<span style="color:#000">plt</span>.<span style="color:#000">ylabel</span>(<span style="color:#5a2">&#39;Residual of predictions on test set&#39;</span>)</code></pre></div>
+<p><img src="/Post_images/20181213_Apartment_price_regression/Slide_images/Slide13.png" alt="png" /></p>
+
+<p><img src="/Post_images/20181213_Apartment_price_regression/Slide_images/Slide14.png" alt="png" /></p>
+
+<hr />
+
+<h3 id="additional-options">Additional options</h3>
+
+<p>In the below code you can see an example how the webscraping could have been conducted using selenium browser automation, instead of using beautifulsoup. Selenium comes handy when the website&rsquo;s html does not have all the required information statically (e.g. login required, lazy loading of pictures, etc.)</p>
+
+<p>Below the code is scrolling down the opened url to load lazy loading pics.</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#888;font-style:italic"># Uses selenium to open the url, scroll to the bottom and return soup object</span>
+<span style="color:#888;font-style:italic"># not in use, given the slow speed of selenium</span>
+<span style="color:#00f">def</span> <span style="color:#000">site_to_soup</span>(<span style="color:#000">url</span>):
+    <span style="color:#000">browser</span> = <span style="color:#000">webdriver</span>.<span style="color:#000">Chrome</span>()
+    <span style="color:#000">browser</span>.<span style="color:#000">get</span>(<span style="color:#000">url</span>)
+    <span style="color:#000">lenOfPage</span> = <span style="color:#000">browser</span>.<span style="color:#000">execute_script</span>(<span style="color:#5a2">&#34;window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;&#34;</span>)
+    <span style="color:#000">match</span>=<span style="color:#000">False</span>
+    <span style="color:#00f">while</span>(<span style="color:#000">match</span>==<span style="color:#000">False</span>):
+            <span style="color:#000">lastCount</span> = <span style="color:#000">lenOfPage</span>
+            <span style="color:#000">time</span>.<span style="color:#000">sleep</span>(<span style="color:#3af">3</span>)
+            <span style="color:#000">lenOfPage</span> = <span style="color:#000">browser</span>.<span style="color:#000">execute_script</span>(<span style="color:#5a2">&#34;window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;&#34;</span>)
+            <span style="color:#00f">if</span> <span style="color:#000">lastCount</span>==<span style="color:#000">lenOfPage</span>:
+                <span style="color:#000">match</span>=<span style="color:#000">True</span>
+    <span style="color:#000">soup</span> = <span style="color:#000">BeautifulSoup</span>(<span style="color:#000">browser</span>.<span style="color:#000">page_source</span>,<span style="color:#5a2">&#34;lxml&#34;</span>)
+    <span style="color:#000">browser</span>.<span style="color:#000">quit</span>()
+    <span style="color:#00f">return</span> <span style="color:#000">soup</span></code></pre></div>
+  </section>
+  <div class="clearfix">
+    
+      <div class="post-date pull-left">
+        <span class="small">
+          Posted on
+          Dec 13, 2018 at 12:45
+        </span>
+      </div>
+    
+    <div class="pull-right">
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/real-estate/">#Real Estate</a></span>
+        
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/regression/">#Regression</a></span>
+        
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/price/">#Price</a></span>
+        
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/sklearn/">#Sklearn</a></span>
+        
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/beautifulsoup/">#Beautifulsoup</a></span>
+        
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/ingatlan.com/">#Ingatlan.com</a></span>
+        
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/regularization/">#Regularization</a></span>
+        
+      
+        
+          <span class="post-tag small"><a href="https://kriszsandor.github.io/tags/polynomial/">#Polynomial</a></span>
+        
+      
+    </div>
+  </div>
+  <footer>
+    
+      
+    
+    
+      
+        <div class="delimiter"></div>
+        <section class="author-info row">
+          <div class="author-avatar col-md-2">
+            
+              <img alt="Author Avatar" src="/images/KS.jpg" />
+            
+          </div>
+          <div class="author-meta col-md-10">
+            
+              <h2 class="author-name text-primary">Krisztian Sandor</h2>
+            
+            
+              <div class="author-bio">I&#39;m Krisztian an economist and data scientist from Budapest, Hungary.</div>
+            
+            
+              <a class="btn btn-primary author-contact" href="https://www.linkedin.com/in/krisztiansandor/">
+                <div>
+                  <i class="fa fa-envelope-o" aria-hidden="true"></i>
+                  &nbsp;Contact me
+                </div>
+              </a>
+            
+          </div>
+        </section>
+      
+    <div class="delimiter"></div>
+    <div class="pager-container">
+      
+        <a class="btn btn-primary btn-older-posts" href="https://kriszsandor.github.io/posts/20181212_music_recommendation/">
+          <div>
+            <span aria-hidden="true">&larr;</span> Older Posts
+          </div>
+        </a>
+      
+      
+        <a class="btn btn-primary btn-newer-posts disabled" href="#">
+          <div>
+            Newer Posts <span aria-hidden="true">&rarr;</span>
+          </div>
+        </a>
+      
+    </div>
+  </footer>
+</article>
+<div class="delimiter"></div>
+
+  </main>
+  <footer class="container global-footer">
+    <div class="copyright-note pull-left">
+      &copy; Krisztian Sandor, Budapest, Hungary
+    </div>
+    <div class="sns-links hidden-print">
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  
+  
+  
+  
+</body>
+</html>
+

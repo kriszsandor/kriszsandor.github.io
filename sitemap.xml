@@ -3,6 +3,11 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>https://kriszsandor.github.io/posts/20181213_apartment_price_regression/</loc>
+    <lastmod>2018-12-13T12:45:00-05:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://kriszsandor.github.io/posts/20181212_music_recommendation/</loc>
     <lastmod>2018-12-12T11:20:26-05:00</lastmod>
   </url>
@@ -37,6 +42,12 @@
   <url>
     <loc>https://kriszsandor.github.io/tags/b2b/</loc>
     <lastmod>2018-12-11T01:00:26-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://kriszsandor.github.io/tags/beautifulsoup/</loc>
+    <lastmod>2018-12-13T12:45:00-05:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -76,6 +87,12 @@
   </url>
   
   <url>
+    <loc>https://kriszsandor.github.io/tags/ingatlan.com/</loc>
+    <lastmod>2018-12-13T12:45:00-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>https://kriszsandor.github.io/tags/kaggle/</loc>
     <lastmod>2018-12-12T11:20:26-05:00</lastmod>
     <priority>0</priority>
@@ -95,7 +112,7 @@
   
   <url>
     <loc>https://kriszsandor.github.io/</loc>
-    <lastmod>2018-12-12T11:20:26-05:00</lastmod>
+    <lastmod>2018-12-13T12:45:00-05:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -130,8 +147,20 @@
   </url>
   
   <url>
+    <loc>https://kriszsandor.github.io/tags/polynomial/</loc>
+    <lastmod>2018-12-13T12:45:00-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>https://kriszsandor.github.io/posts/</loc>
-    <lastmod>2018-12-12T11:20:26-05:00</lastmod>
+    <lastmod>2018-12-13T12:45:00-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://kriszsandor.github.io/tags/price/</loc>
+    <lastmod>2018-12-13T12:45:00-05:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -142,8 +171,32 @@
   </url>
   
   <url>
+    <loc>https://kriszsandor.github.io/tags/real-estate/</loc>
+    <lastmod>2018-12-13T12:45:00-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>https://kriszsandor.github.io/tags/recommendation/</loc>
     <lastmod>2018-12-12T11:20:26-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://kriszsandor.github.io/tags/regression/</loc>
+    <lastmod>2018-12-13T12:45:00-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://kriszsandor.github.io/tags/regularization/</loc>
+    <lastmod>2018-12-13T12:45:00-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://kriszsandor.github.io/tags/sklearn/</loc>
+    <lastmod>2018-12-13T12:45:00-05:00</lastmod>
     <priority>0</priority>
   </url>
   
